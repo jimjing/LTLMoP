@@ -9,8 +9,7 @@
 import re
 import copy
 import numpy
-
-#nextify = lambda x: " next(%s) " % x
+import functools
 
 def nextify(p):
     # Recursive function for aggressively applying the next operator
@@ -71,9 +70,6 @@ def writeSpec(text, sensorList, regionList, robotPropList):
 
     RegionGroups = {}
 
-    # List of all robot prpositions
-    allRobotProp = regionList + robotPropList
-
     # Define the number of bits needed to encode the regions
     numBits = int(numpy.ceil(numpy.log2(len(regionList))))
 
@@ -98,7 +94,7 @@ def writeSpec(text, sensorList, regionList, robotPropList):
     IfThenRE = re.compile('if (?P<cond>.+) then (?P<req>.+)',re.IGNORECASE)
     UnlessRE = re.compile('(?P<req>.+) unless (?P<cond>.+)',re.IGNORECASE)
     IffRE = re.compile('(?P<req>.+) if and only if (?P<cond>.+)',re.IGNORECASE)
-    CommentRE = re.compile('^\s*#',re.IGNORECASE)
+    CommentRE = re.compile('^\s*#.*?\n',re.IGNORECASE|re.MULTILINE)
     LivenessRE = re.compile('^\s*(go to|visit|infinitely often do|infinitely often sense|infinitely often)',re.IGNORECASE)
     SafetyRE = re.compile('^\s*(always|always do |do|always sense|sense)',re.IGNORECASE)
     StayRE = re.compile('(stay there|stay)',re.IGNORECASE)
@@ -107,6 +103,23 @@ def writeSpec(text, sensorList, regionList, robotPropList):
     RegionGroupingRE = re.compile('group (?P<groupName>[\w]+) (is|are) (?P<regions>.+)',re.IGNORECASE)
     QuantifierRE = re.compile('(?P<quantifier>all|any)\s+(?P<groupName>\w+)',re.IGNORECASE)
 
+    # Remove all comment lines
+    text = CommentRE.sub("", text)
+
+    # Go through and replace group editing operations with special propositions
+    internal_props = []
+    EditGroupRE = re.compile('(?P<operation>add to|remove from)\s+(?P<groupName>\w+)', re.IGNORECASE)
+    def create_edit_prop(internal_props, m):
+        prop_name = "_"+m.group('operation').replace(" ", "_")+ "_" + m.group('groupName')
+        if prop_name not in internal_props:
+            internal_props.append(prop_name)
+        return "do s." + prop_name
+    text = EditGroupRE.sub(functools.partial(create_edit_prop, internal_props), text)
+
+    robotPropList += map(lambda p: "s."+p, internal_props)
+
+    # List of all robot propositions
+    allRobotProp = regionList + robotPropList
 
     # Creating the 'Stay' formula - it is a constant formula given the number of bits.
     StayFormula = createStayFormula(numBits)
@@ -554,30 +567,6 @@ def writeSpec(text, sensorList, regionList, robotPropList):
             print ''
             failed = True
 
-        ## Resolve all the quantifiers
-        #if QuantifierFlag is not None:
-        #    for f_type in ['EnvInit', 'SysInit', 'EnvTrans', 'SysTrans', 'EnvGoals', 'SysGoals']:
-        #        for i, f in enumerate(spec[f_type]):
-        #            print "!!" + f
-        #            if "QUANTIFIER_PLACEHOLDER" not in f: continue
-        #            if f_type in ['EnvInit']:
-        #                print "ERROR: Quantifier not valid in environment initial conditions"
-        #            isCondition = "->" in f[f.find("QUANTIFIER_PLACEHOLDER"):]
-        #            if QuantifierFlag == "ANY":
-        #                spec[f_type][i] = f.replace("QUANTIFIER_PLACEHOLDER", or_string)
-        #            elif QuantifierFlag == "ALL":
-        #                if isCondition:
-        #                    spec[f_type][i] = f.replace("QUANTIFIER_PLACEHOLDER", and_string)
-        #                elif f_type in ["EnvTrans", "SysTrans"]:
-        #                    for r in RegionGroups[quant_group]:
-        #                        spec[f_type].append(f.replace("QUANTIFIER_PLACEHOLDER", r))
-        #                    spec[f_type][i] = ""
-        #                elif f_type in ["EnvGoals", "SysGoals"]:
-        #                    for r in RegionGroups[quant_group]:
-        #                        spec[f_type].append(f.replace("QUANTIFIER_PLACEHOLDER", r))
-        #                    spec[f_type][i] = ""
-        #    allRobotProp.remove("QUANTIFIER_PLACEHOLDER")
-      
         if QuantifierFlag is not None:
             allRobotProp.remove("QUANTIFIER_PLACEHOLDER")
 
@@ -633,7 +622,7 @@ def writeSpec(text, sensorList, regionList, robotPropList):
         print 'They should be removed from the proposition lists\n'
     
 
-    return spec,linemap,failed
+    return spec,linemap,failed,internal_props
 
 
 def parseInit(sentence,PropList,lineInd):
@@ -699,6 +688,9 @@ def parseSafety(sentence,sensorList,allRobotProp,lineInd):
     
     tempFormula = sentence[:]
     PropList = sensorList + allRobotProp
+
+    # Ignore any extra 'do's
+    tempFormula = re.sub(r"\bdo\b", "", tempFormula, re.IGNORECASE)
     
     # Replace logic operations with TLV convention
     tempFormula = replaceLogicOp(tempFormula)

@@ -73,7 +73,7 @@ class SpecCompiler(object):
     def _writeSMVFile(self):
         numRegions = len(self.parser.proj.rfi.regions)
         sensorList = self.proj.enabled_sensors
-        robotPropList = self.proj.enabled_actuators + self.proj.all_customs
+        robotPropList = self.proj.enabled_actuators + self.proj.all_customs + self.proj.internal_props
 
         createSMVfile(self.proj.getFilenamePrefix(), numRegions, sensorList, robotPropList)
 
@@ -88,7 +88,7 @@ class SpecCompiler(object):
         else:
             text = self.proj.specText
 
-        spec, traceback, failed = writeSpec(text, sensorList, regionList, robotPropList)
+        spec, traceback, failed, self.proj.internal_props = writeSpec(text, sensorList, regionList, robotPropList)
 
         # Abort compilation if there were any errors
         if failed:
@@ -96,7 +96,7 @@ class SpecCompiler(object):
 
         adjData = self.parser.proj.rfi.transitions
 
-        createLTLfile(self.proj.getFilenamePrefix(), sensorList, robotPropList, adjData, spec)
+        createLTLfile(self.proj.getFilenamePrefix(), sensorList, robotPropList + self.proj.internal_props, adjData, spec)
 
         return traceback
         
@@ -268,8 +268,8 @@ class SpecCompiler(object):
 
     def compile(self, with_safety_aut=False):
         self._decompose()
-        self._writeSMVFile()
         tb = self._writeLTLFile()
+        self._writeSMVFile()
 
         if tb is None:
             print "ERROR: Compilation aborted"

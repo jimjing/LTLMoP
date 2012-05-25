@@ -34,6 +34,7 @@ class Project:
         self.all_actuators = []
         self.enabled_actuators = []
         self.all_customs = []
+        self.internal_props = []
         self.currentConfig = None
         self.shared_data = {}  # This is for storing things like server connection objects, etc.
 
