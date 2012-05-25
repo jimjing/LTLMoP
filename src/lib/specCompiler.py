@@ -11,18 +11,19 @@ from createJTLVinput import createLTLfile, createSMVfile
 from parseEnglishToLTL import writeSpec
 
 class SpecCompiler(object):
-    def __init__(self, spec_filename):
-        self.proj = project.Project()
-        self.proj.loadProject(spec_filename)
+    def __init__(self, spec_filename=None):
+        if spec_filename is not None:
+            self.proj = project.Project()
+            self.proj.loadProject(spec_filename)
 
-        # Check to make sure this project is complete
-        if self.proj.rfi is None:
-            print "ERROR: Please define regions before compiling."
-            return
-    
-        if self.proj.specText.strip() == "":
-            print "ERROR: Please write a specification before compiling."
-            return
+            # Check to make sure this project is complete
+            if self.proj.rfi is None:
+                print "ERROR: Please define regions before compiling."
+                return
+        
+            if self.proj.specText.strip() == "":
+                print "ERROR: Please write a specification before compiling."
+                return
 
         self.decomposedSpecText = None
 
@@ -276,5 +277,5 @@ class SpecCompiler(object):
             return 
 
         #self._checkForEmptyGaits()
-        self._synthesize(with_safety_aut)
+        return self._synthesize(with_safety_aut)
 
