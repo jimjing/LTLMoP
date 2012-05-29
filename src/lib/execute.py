@@ -119,7 +119,15 @@ class LTLMoPExecutor(object):
         
         c = specCompiler.SpecCompiler()
         c.proj = self.next_proj
-        # TODO: do we need to make sure rfi is non-decomposed here?
+
+        # make sure rfi is non-decomposed here
+        # NOTE: only matters if this is a proj that has been initialized
+        if c.proj == self.proj:
+            print "Resynthesis not necessary! (Specification has not changed)"
+            return True
+
+        #c.proj.loadRegionFile(decomposed=False)
+
         (realizable, realizableFS, output) = c.compile()
         print output
 
