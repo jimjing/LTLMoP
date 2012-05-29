@@ -34,6 +34,8 @@ class initHandler:
         
         print "map is %d bytes long" % len(data_string)
         
+        #print data_string.replace('"', '\\"')
+
         self._sendWithAck(struct.pack("<I", len(data_string)))
         self._sendWithAck(data_string)
         
