@@ -89,7 +89,7 @@ class SpecCompiler(object):
         else:
             text = self.proj.specText
 
-        spec, traceback, failed, self.proj.internal_props = writeSpec(text, sensorList, regionList, robotPropList)
+        spec, traceback, failed, self.proj.internal_props = writeSpec(text, sensorList, regionList, robotPropList, self.parser.proj.regionMapping)
 
         # Abort compilation if there were any errors
         if failed:

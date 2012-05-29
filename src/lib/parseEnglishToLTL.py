@@ -30,7 +30,7 @@ def nextify(p):
     else:
         return " next(%s) " % p
 
-def writeSpec(text, sensorList, regionList, robotPropList):
+def writeSpec(text, sensorList, regionList, robotPropList, regionMapping):
     ''' This function creates the Spec dictionary that contains the parsed LTL
         subformulas. It takes the text that contains the structured English,
         the list of sensor propositions, the list containing
@@ -403,10 +403,15 @@ def writeSpec(text, sensorList, regionList, robotPropList):
 
                     memPropNames = []
                     for r in iterate_over:
+                        # (INELEGANT/HACK) Figure out which undecomposed region name `r` corresponds to, so that memory props can persist correctly even after re-decomposition
+                        for real, decomp in regionMapping.iteritems():
+                            if r == "("+' | '.join(decomp)+")":
+                                break
+
                         tmp_req = regCond.replace("next(QUANTIFIER_PLACEHOLDER)", nextify(r))
                         tmp_req = tmp_req.replace("QUANTIFIER_PLACEHOLDER", r)
                         
-                        internal_props.append("m" + re.sub("(e|s)\.", "", re.sub("\s+","_",tmp_req.replace("&","").replace("(","").replace(")",""))).rstrip("_"))
+                        internal_props.append("m" + re.sub("(e|s)\.", "", re.sub("\s+","_",tmp_req.replace(r,real).replace("&","").replace("(","").replace(")",""))).rstrip("_"))
                         memPropNames.append("s."+internal_props[-1])
 
                         condStayFormula = {}
@@ -725,7 +730,10 @@ def parseInit(sentence,PropList,lineInd):
 
     # checking that all propositions are 'legal' (in the list of propositions)
     for prop in re.findall('([\w\.]+)',tempFormula):
-        if not prop in PropList:
+        # HACK: special treatment of memory props because of their poor persistence (FIXME and do this properly)
+        if prop.startswith("m_"):
+            tempFormula = tempFormula.replace(prop, "s."+prop)
+        elif prop not in PropList:
             print 'ERROR(1): Could not parse the sentence in line '+ str(lineInd)+' because ' + prop + ' is not recognized\n'
             return ''
     
