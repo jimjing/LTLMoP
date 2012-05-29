@@ -51,6 +51,11 @@ def writeSpec(text, sensorList, regionList, robotPropList):
         text = re.sub("\\b"+prop+"\\b", "s." + prop, text)
         robotPropList[i] = "s." + robotPropList[i]
 
+    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    # HACK: THIS IS NOT REALLY A ROBOT PROP :(
+    robotPropList += ["FALSE"]
+    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
     # initializing the dictionary
     spec = {}
     spec['EnvInit']= ''
