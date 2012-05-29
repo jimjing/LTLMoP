@@ -22,8 +22,8 @@ exp10.regions
 
 Sensors: # List of sensor propositions and their state (enabled = 1, disabled = 0)
 region_added, 1
-force_explore, 1
 explore_done, 1
+force_explore, 1
 
 
 ======== SPECIFICATION ========
@@ -45,8 +45,8 @@ if you are not sensing force_explore and you are not sensing region_added then v
 group unexplored_rooms is empty
 add to unexplored_rooms if and only if you are sensing region_added
 
-if you are sensing force_explore and you are not sensing region_added then visit all unexplored_rooms
-explore is set on force_explore and any unexplored_room and reset on explore_done
+if you are sensing force_explore and not region_added then visit all unexplored_rooms and explore and explore_done at least once
+
 if you are activating explore then infinitely often explore_done
 if you were activating explore or you are activating explore then stay there
 
