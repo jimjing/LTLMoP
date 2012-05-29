@@ -124,6 +124,9 @@ class LTLMoPExecutor(object):
         print output
 
         if not (realizable or realizableFS):
+            print "!!!!!!!!!!!!!!!!!!!!!!"
+            print "ERROR: UNSYNTHESIZABLE"
+            print "!!!!!!!!!!!!!!!!!!!!!!"
             return False
 
         print "New automaton has been created."
