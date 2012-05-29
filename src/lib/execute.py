@@ -135,6 +135,8 @@ class LTLMoPExecutor(object):
             print "!!!!!!!!!!!!!!!!!!!!!!"
             print "ERROR: UNSYNTHESIZABLE"
             print "!!!!!!!!!!!!!!!!!!!!!!"
+            self.runFSA.clear()
+            print "PAUSED."
             return False
 
         print "New automaton has been created."
