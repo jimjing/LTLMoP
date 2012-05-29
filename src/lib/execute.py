@@ -216,9 +216,9 @@ class LTLMoPExecutor(object):
                 # HACK/FIXME: don't hardcode sensor prop names
                 if int(self.aut.next_state.inputs['region_added']) == 1:
                     # HACK/FIXME: don't hardcode robot name
-                    referent = self.aut.h_instance['sensor']['BasicSimulatedRobot'].addedRegions
+                    referent = self.aut.h_instance['sensor']['Pioneer_for_UKR'].addedRegions
                 elif int(self.aut.next_state.inputs['region_removed']) == 1:
-                    referent = self.aut.h_instance['sensor']['BasicSimulatedRobot'].removedRegions
+                    referent = self.aut.h_instance['sensor']['Pioneer_for_UKR'].removedRegions
                 # TODO: add finalization referent case
                 else:
                     print "ERROR: missing group update referent"
