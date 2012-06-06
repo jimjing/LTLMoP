@@ -89,38 +89,24 @@ class _MapUpdateThread(threading.Thread):
             map_number += 1
 
 class sensorHandler:
-    def __init__(self, proj, shared_data, map_listen_port):
+    def __init__(self, proj, shared_data, map_listen_port, explore_done_poll_port):
         """
         Sensor handler for communicating with C# program on Pioneer.
 
         map_listen_port (int): TCP port to receive map updates on (default=12345)
+        explore_done_poll_port (int): TCP port to poll for 'explore_done' sensor value (default=11012)
         """
-        self.host = "10.0.0.96"
-        self.ports = {'tempNewRegion': 11002,
-                    'hazardous': 11006,
-#                    'pink': 11012,
-#                    'blue': 11014,
-                    'assignment': 11016,
-                    'newOffice': 11018,
-                    'detectPOI': 11020,
-                    'map': int(map_listen_port)}
-        self.MAX_PACKET_SIZE = 1024
-        self.MIN_POLL_PERIOD = 0.01; # s
-        
+        try:
+            self.host = shared_data['PIONEER_ADDRESS']
+        except KeyError:
+            print "ERROR: You need to call Pioneer Init handler before using Pioneer Actuator Handler"
+            return
+            
+        self.ports = {'explore_done': int(explore_done_poll_port),
+                      'map': int(map_listen_port)}
+
         self.proj = proj
-        self.sensor_cache = {}
         
-        # create sockets
-        self.sockets = {}
-        for s_name in self.ports.keys():
-            self.sockets[s_name] = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
-            self.sockets[s_name].settimeout(0.1)
-
-        #pollThread = threading.Thread(target = self._pollSensors)
-        #pollThread.start()
-        
-        self.sensor_cache["gotoPOIDone"] = False
-
         self.mapThread = _MapUpdateThread(proj, self.ports['map'])
         self.mapThread.daemon = True
         self.mapThread.start()
@@ -129,48 +115,48 @@ class sensorHandler:
         self.removedRegions = []
 
 
-    def _pollSensors(self):
-        while 1:
-            for s_name in self.sockets.keys():
-                tic = time.time()
                 
-                #print "send request", s_name
-                # request data
-                self.sockets[s_name].sendto(s_name, (self.host, self.ports[s_name]))
-                
-                try:
-                    # receive data
-                    data,addr = self.sockets[s_name].recvfrom(self.MAX_PACKET_SIZE)
-                    if s_name == 'detectPOI':
-                        receivedDoubleList = []
-                        for i in range(0,4):
-                            unpackedDataDouble = unpack_from('d',data,i*8)[0]
-                            receivedDoubleList.append(unpackedDataDouble)
-                        newPOI, x, y, theta = receivedDoubleList[0:4]
-                        self.sensor_cache[s_name] = (newPOI != 0)
-                        if(newPOI != 0):
-                            self.proj.actuator_handler.targetPose = (x,y,theta)
-                        #print "targetX= %s" % str(x)
-                    else:
-                        self.sensor_cache[s_name] = (data == "T")
-                    #print "recvd request"
-                except socket.timeout:
-                    print "WARNING: timeout receiving from sensor %s" % (s_name)
-                
-                while (time.time() - tic) < self.MIN_POLL_PERIOD:
-                    time.sleep(0.002)
-                    
-                #print "nap over"
-            
+    def _send(self, s, msg):
+        totalsent = 0
+        while totalsent < len(msg):
+            sent = s.send(msg[totalsent:])
+            if sent == 0:
+                raise RuntimeError("socket connection broken")
+            totalsent = totalsent + sent
+
+    def exploreDone(self, initial):
+        """ Returns true, once, if the explore_room action has been finished """
+        
+        if initial:
+            self.explore_done_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+            self.explore_done_socket.settimeout(1)
+            self.explore_done_socket.connect((self.host, self.ports['explore_done']))
+            return
+
+        # request data
+        self._send(self.explore_done_socket, 'explore_done\n')
+        print "sent request"
+        
+        try:
+            # receive data
+            data = self.explore_done_socket.recv(1)
+            print "got data: " + repr(data)
+        except socket.timeout:
+            print "WARNING: timeout receiving from sensor 'explore_done'"
+            val = False
+        else:
+            val = (data == "T")
+        
+        return val
+
+
     def regionAdded(self, initial):
         """ Return true if a region was added in the last map update """
 
         if initial:
-            print "RA init"
             return
 
         if self.mapThread.regionAddedFlag.isSet():
-            print "RA true"
             self.addedRegions = copy.deepcopy(self.mapThread.addedRegions)
             self.mapThread.regionAddedFlag.clear()
             return True
