@@ -195,7 +195,7 @@ class LTLMoPExecutor(object):
         # Constrain initial condition to current state
         # FIXME: We probably ought to constrain to the decomposed region, not the larger one
         current_region = new_proj.rfi.regions[self._getCurrentRegionFromPose(rfi=new_proj.rfi)].name
-        current_sys_state = " and ".join([k if v else "not " + k for k,v in self.aut.current_outputs.iteritems() if not k.startswith("_")])
+        current_sys_state = " and ".join([k if v else "not " + k for k,v in self.aut.current_outputs.iteritems() if not k.startswith("_") and not k.startswith("m_")])
         sys_init_formula = "robot starts in {0} with {1}\n".format(current_region, current_sys_state)
 
         # delete old ones
