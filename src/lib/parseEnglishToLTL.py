@@ -110,7 +110,7 @@ def writeSpec(text, sensorList, regionList, robotPropList, regionMapping):
     QuantifierRE = re.compile('(?P<quantifier>all|any)\s+(?P<groupName>\w+)',re.IGNORECASE)
 
     # Remove all comment lines
-    text = CommentRE.sub("", text)
+    text = CommentRE.sub("\n", text)
 
     # Go through and replace group editing operations with special propositions
     internal_props = []
