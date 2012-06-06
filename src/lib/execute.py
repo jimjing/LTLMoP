@@ -166,7 +166,7 @@ class LTLMoPExecutor(object):
         newSpecName = "%s.step%d.spec" % (base_name, n.next())
 
         # Find the most recent region file
-        newest_regions = max([self.next_proj.rfi.filename] + glob.glob("%s.update*.regions" % base_name), key=lambda f: os.stat(f).st_mtime)
+        newest_regions = max([self.proj.rfiold.filename] + glob.glob("%s.update*.regions" % base_name), key=lambda f: os.stat(f).st_mtime)
 
         print "Using newest region file: " + newest_regions
         new_proj.rfi.readFile(newest_regions)
