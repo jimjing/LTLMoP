@@ -44,7 +44,12 @@ class _MapUpdateThread(threading.Thread):
 
             rfi = regions.RegionFileInterface(transitions=[])
 
-            r_data = json.loads(mapdata)
+            try:
+                r_data = json.loads(mapdata)
+            except Exception as e:
+                print "Error parsing map data!", e
+                continue
+
             rfi.regions = []
             for reg in r_data:
                 r = regions.Region()
@@ -128,24 +133,28 @@ class sensorHandler:
         """ Returns true, once, if the explore_room action has been finished """
         
         if initial:
-            self.explore_done_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-            self.explore_done_socket.settimeout(1)
-            self.explore_done_socket.connect((self.host, self.ports['explore_done']))
             return
+        
+        # TODO: don't reconnect each time
+        self.explore_done_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+        self.explore_done_socket.settimeout(1)
+        self.explore_done_socket.connect((self.host, self.ports['explore_done']))
 
         # request data
-        self._send(self.explore_done_socket, 'explore_done\n')
-        print "sent request"
+        #self._send(self.explore_done_socket, 'explore_done\n')
+        #print "Connected to server"
         
         try:
             # receive data
             data = self.explore_done_socket.recv(1)
-            print "got data: " + repr(data)
+            #print "got data: " + repr(data)
         except socket.timeout:
             print "WARNING: timeout receiving from sensor 'explore_done'"
             val = False
         else:
             val = (data == "T")
+
+        self.explore_done_socket.close()
         
         return val
 
