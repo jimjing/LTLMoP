@@ -47,7 +47,8 @@ Robot starts with false
 
 ### main specification ###
 
-group patrol_locations is hall1, hall2, hall3
+#group patrol_locations is hall1, hall2, hall3
+group patrol_locations is empty
 
 if you are not sensing carrying_chart or region_added then visit all patrol_locations
 
@@ -57,7 +58,6 @@ do raise_flag if and only if you are sensing carrying_chart and you are in offic
 ### exploration settings ###
 
 do explore if and only if you are not sensing carrying_chart
-if you are sensing start of explore or end of explore then stay there
 
 add to patrol_locations if and only if you are sensing explore_room_done and room_category_OR
 
