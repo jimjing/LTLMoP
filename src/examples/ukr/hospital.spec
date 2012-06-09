@@ -33,11 +33,11 @@ room_category_OR, 1
 ======== SPECIFICATION ========
 
 RegionMapping: # Mapping between region names and their decomposed counterparts
-hall1 = p4
+others = 
 hall2 = p3
 hall3 = p2
 office = p1
-others = 
+hall1 = p4
 
 Spec: # Specification in structured English
 ### assumptions ###
@@ -86,6 +86,7 @@ if you are activating explore and needs_resynthesis then do resynthesize
 
 # make sure we visit and explore the new places (if told to)
 if you are activating explore and not region_added then visit all unexplored_rooms and explore_room and explore_room_done at least once
+if you are not in any unexplored_room then do not explore_room
 
 if you were activating explore_room or you are activating explore_room then stay there
 
