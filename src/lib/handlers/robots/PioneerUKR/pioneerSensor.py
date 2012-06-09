@@ -138,13 +138,13 @@ class sensorHandler:
         # TODO: don't reconnect each time
         self.explore_done_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
         self.explore_done_socket.settimeout(1)
-        self.explore_done_socket.connect((self.host, self.ports['explore_done']))
 
         # request data
         #self._send(self.explore_done_socket, 'explore_done\n')
         #print "Connected to server"
         
         try:
+            self.explore_done_socket.connect((self.host, self.ports['explore_done']))
             # receive data
             data = self.explore_done_socket.recv(1)
             #print "got data: " + repr(data)
