@@ -94,12 +94,13 @@ class _MapUpdateThread(threading.Thread):
             map_number += 1
 
 class sensorHandler:
-    def __init__(self, proj, shared_data, map_listen_port, explore_done_poll_port):
+    def __init__(self, proj, shared_data, map_listen_port, explore_done_poll_port, cup_poll_port):
         """
         Sensor handler for communicating with C# program on Pioneer.
 
         map_listen_port (int): TCP port to receive map updates on (default=12345)
         explore_done_poll_port (int): TCP port to poll for 'explore_done' sensor value (default=11012)
+        cup_poll_port (int): UDP port to poll for 'cup' sensor value (default=11016)
         """
         try:
             self.host = shared_data['PIONEER_ADDRESS']
@@ -108,7 +109,10 @@ class sensorHandler:
             return
             
         self.ports = {'explore_done': int(explore_done_poll_port),
+                      'cup': int(cup_poll_port),
                       'map': int(map_listen_port)}
+
+        self.sensor_cache = {}
 
         self.proj = proj
         
@@ -155,9 +159,28 @@ class sensorHandler:
             val = (data == "T")
 
         self.explore_done_socket.close()
+
+        if val:
+            print "explore done is true"
         
         return val
 
+    def cupSensor(self, initial):
+        if initial:
+            self.cup_socket = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+            self.cup_socket.settimeout(1, )
+            self.sensor_cache['cup'] = False
+            return
+
+        self.cup_socket.sendto("?", (self.host, self.ports['cup']))
+        try:
+            data = self.cup_socket.recv(1)
+        except socket.timeout:
+            print "WARNING: timeout receiving from sensor 'cup'"
+        else:
+            self.sensor_cache['cup'] = (data == "T")
+
+        return self.sensor_cache['cup']
 
     def regionAdded(self, initial):
         """ Return true if a region was added in the last map update """
