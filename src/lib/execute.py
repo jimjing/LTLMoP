@@ -230,7 +230,15 @@ class LTLMoPExecutor(object):
                 #    referent = self.proj.h_instance['sensor'][self.proj.currentConfig.main_robot].removedRegions
                 else:
                     # assume we are talking about the current region
-                    referent = set([self.proj.rfiold.regions[self._getCurrentRegionFromPose(rfi=self.proj.rfiold)].name])
+                    #referent = set([self.proj.rfiold.regions[self._getCurrentRegionFromPose(rfi=self.proj.rfiold)].name])
+                    referent = None
+                    for rname, rlist in self.proj.regionMapping.iteritems():
+                        if self.proj.rfi.regions[self.aut.current_region].name in rlist:
+                            referent = set([rname])
+                            break
+
+                    if referent is None:  # This shouldn't happen
+                        print "ERROR: Couldn't find region to add/remove"
                 
                 if m.group('action') == "add_to":
                     print "Added region(s) %s to group %s." % (", ".join(referent), m.group('groupName'))
