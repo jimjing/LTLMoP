@@ -48,8 +48,22 @@ def usage(script_name):
                                   Load experiment configuration from FILE """ % script_name)
 
 class LTLMoPExecutor(object):
+    """
+    This is the main execution object, which combines the synthesized discrete automaton
+    with a set of handlers (as specified in a .config file) to create and run a hybrid controller
+    """
+
     def __init__(self, spec_file, aut_file, show_gui=True):
-        self.proj = None
+        """
+        Create a new execution object, based on the given spec and aut files.
+        If show_gui is True, a Simulation Status window will be opened.
+        """
+
+        self.show_gui = show_gui
+
+        self.proj = None # this is the project that we are currently using to execute
+        self.next_proj = None # this is the temporary project we update as the map and specification change,
+                              # but won't actually use until resynthesis is triggered
 
         # Choose a timer func with maximum accuracy for given platform
         if sys.platform in ['win32', 'cygwin']:
@@ -57,12 +71,7 @@ class LTLMoPExecutor(object):
         else:
             self.timer_func = time.time
 
-        self.show_gui = show_gui
-
         self.runFSA = threading.Event()  # Start out paused
-
-        self.proj = project.Project()
-
         self.initialize(spec_file, aut_file, firstRun=True)
 
     def loadSpecFile(self, filename):
@@ -158,7 +167,13 @@ class LTLMoPExecutor(object):
 
         # copy hsub references manually
         new_proj.hsub = self.proj.hsub
+        new_proj.hsub.proj = new_proj # oh my god, guys
         new_proj.h_instance = self.proj.h_instance
+        
+        # HACK: update object refs in sensor handler
+        new_proj.h_instance["sensor"][self.proj.currentConfig.main_robot].proj = new_proj
+        new_proj.h_instance["sensor"][self.proj.currentConfig.main_robot].mapThread.proj = new_proj
+
         new_proj.sensor_handler = self.proj.sensor_handler
         new_proj.actuator_handler = self.proj.actuator_handler
 
@@ -287,6 +302,10 @@ class LTLMoPExecutor(object):
                 print "WARNING: Unknown command received from GUI: " + data_in
 
     def startGUI(self):
+        """
+        Start the Simulation Status GUI window, and redirect all output to it via a local UDP connection
+        """
+
         self.guiListenInitialized = threading.Event()
 
         # Create a subprocess
@@ -311,6 +330,13 @@ class LTLMoPExecutor(object):
         sys.stderr = redir
 
     def initialize(self, spec_file, aut_file, firstRun=True):
+        """
+        Prepare for execution, by loading and initializing all the relevant files (specification, map, handlers, aut)
+        Also start the Simulation Status GUI if necessary.
+
+        If `firstRun` is true, all handlers will be imported; otherwise, only the motion control handler will be reloaded.
+        """
+
         # Start status/control GUI
         if firstRun and self.show_gui:
             self.startGUI()
