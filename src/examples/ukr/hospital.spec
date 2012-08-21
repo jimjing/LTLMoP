@@ -9,11 +9,11 @@ explore_room, 1
 raise_flag, 1
 
 CompileOptions:
-convexify: True
+convexify: False
 fastslow: False
 
 CurrentConfigName:
-Untitled configuration
+newmap
 
 Customs: # List of custom propositions
 resynthesize
@@ -21,7 +21,7 @@ explore
 needs_resynthesis
 
 RegionFile: # Relative path of region description file
-hospital.regions
+hospital2.regions
 
 Sensors: # List of sensor propositions and their state (enabled = 1, disabled = 0)
 region_added, 1
@@ -43,16 +43,15 @@ Spec: # Specification in structured English
 ### assumptions ###
 
 Environment starts with not explore_room_done and not region_added
-Robot starts with false
+Robot starts with explore
 
 ### main specification ###
 
-#group patrol_locations is hall1, hall2, hall3
-group patrol_locations is empty
+#group patrol_locations is empty
 
-if you are not sensing carrying_chart or region_added then visit all patrol_locations
+group patrol_locations is hall1, hall2, hall3
 
-if you are sensing carrying_chart and not region_added then visit office
+
 do raise_flag if and only if you are sensing carrying_chart and you are in office
 
 ### exploration settings ###
@@ -97,4 +96,13 @@ if you were not activating explore_room then do not explore_room_done
 # react instantly to UKR-related sensors
 if you are sensing region_added or you were sensing region_added then stay there
 if you are sensing explore_room_done or you were sensing explore_room_done then stay there
+
+
+
+
+######################
+
+if you are not sensing carrying_chart or region_added then visit all patrol_locations
+
+if you are sensing carrying_chart and not region_added then visit office
 
