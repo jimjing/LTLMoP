@@ -24,8 +24,31 @@ class _MapUpdateThread(threading.Thread):
         self.regionRemovedFlag = threading.Event()
         self.removedRegions = []
         self.coordmap_lab2map = proj.coordmap_lab2map
+        self.proj = proj
 
         super(_MapUpdateThread, self).__init__(*args, **kwds)
+
+    def _getCurrentRegionFromPose(self, rfi=None):
+        # TODO: this already exists in execute.py, deduplicate
+        if rfi is None:
+            rfi = self.proj.rfi
+
+        pose = self.proj.h_instance['pose'].getPose()
+
+        region = None
+
+        for i, r in enumerate(rfi.regions):
+            if r.name.lower() == "boundary":
+                continue
+
+            if r.objectContainsPoint(*self.proj.coordmap_lab2map(pose)):
+                region = i
+                break
+
+        if region is None:
+            print "Pose of ", pose, "not inside any region!"
+
+        return region
 
     def run(self):
         import regions
@@ -91,6 +114,19 @@ class _MapUpdateThread(threading.Thread):
 
             self.regionList = newRegionList
             
+            # Reload the motion control handler if only the size of the region changed
+            # WARNING: This doesn't really make sense for motion controllers that require convex (decomposed) regions
+            #if not self.addedRegions and not self.removedRegions:
+            oldReg = self._getCurrentRegionFromPose(self.proj.rfi)
+            newReg = self._getCurrentRegionFromPose(rfi)
+
+            oldName = self.proj.rfi.regions[oldReg].name
+            self.proj.rfi.regions[oldReg] = copy.deepcopy(rfi.regions[newReg])
+            self.proj.rfi.regions[oldReg].name = oldName
+
+            print "Reloading motion control handler..."
+            self.proj.importHandlers(['motionControl'])
+
             map_number += 1
 
 class sensorHandler:
