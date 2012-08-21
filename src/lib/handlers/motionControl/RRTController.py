@@ -114,6 +114,7 @@ class motionControlHandler:
         for regionName,regionPoly in self.map.iteritems():
             self.all += regionPoly
 
+	plt.close()
         if self.operate_system == 2 and self.plotting ==True:
             # start using anmination to plot Pioneer
             self.fig = plt.figure()
@@ -127,7 +128,6 @@ class motionControlHandler:
 
         Returns ``True`` if we've reached the destination region.
         """
-
         if current_reg == next_reg and not last:
             # No need to move!
             self.drive_handler.setVelocity(0, 0)  # So let's stop
@@ -189,10 +189,11 @@ class motionControlHandler:
 
             else:
                 self.ax = None
-
+            print >> sys.__stderr__,'building tree'
             self.RRT_V,self.RRT_E,self.heading,self.E_prev,self.RRT_V_toPass,self.RRT_E_toPass = self.buildTree(\
             [pose[0], pose[1]],pose[2], vertices,self.radius,self.system,self.currentRegionPoly, self.nextRegionPoly,q_gBundle,\
             self.map,self.all,self.max_angle_allowed, self.plotting,self.operate_system)
+            print >> sys.__stderr__,'done with tree'
             #self.buildTree(\
             #[pose[0], pose[1]],pose[2], vertices,self.radius,self.system,self.currentRegionPoly, self.nextRegionPoly,q_gBundle,\
             #self.map,self.all,self.max_angle_allowed, self.plotting,self.operate_system,self.ax)
@@ -214,7 +215,7 @@ class motionControlHandler:
 
         # Pass this desired velocity on to the drive handler
         self.drive_handler.setVelocity(V[0,0], V[1,0], pose[2])
-        RobotPoly = Polygon.Shapes.Circle(self.radius,(pose[0],pose[1]))
+        RobotPoly = Polygon.Shapes.Circle(self.radius/2,(pose[0],pose[1])) # HACK: shrank radius
         #step 4: check whether robot is inside the boundary
 
         departed = not self.currentRegionPoly.covers(RobotPoly)
