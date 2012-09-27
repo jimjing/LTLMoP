@@ -6,6 +6,8 @@ import project
 from regions import *
 import itertools
 import decomposition
+from numpy import vstack,zeros,eye 
+
 
 Polygon.setTolerance(0.1)
 
@@ -69,7 +71,6 @@ class parseLP:
         self.checkOverLapping()
         # remove small regions
         self.removeSmallRegions()
-        
         # decompose any regions with holes or are concave
         if self.proj.compile_options['convexify']:
             self.decomp()
@@ -128,7 +129,9 @@ class parseLP:
         # set up a iterator of lists of boolean value (0/1) for finding overlapping regions
         # each item is corrsponding to one possible overlapping
         # each boolean value is corresponding to one region
-        boolList = itertools.product([0,1],repeat=len(oldRegionNames))
+        #boolList = itertools.product([0,1],repeat=len(oldRegionNames))
+        boolList = vstack([zeros([1,len(oldRegionNames)]),eye(len(oldRegionNames))])
+
         
         self.count = 1 # for naming the portion
         # break the overlapping regions
@@ -136,7 +139,7 @@ class parseLP:
             tempRegionList = []
             result = self.intAllPoints(Polygon.Polygon([(pt.x,pt.y) for pt in self.boundaryRegion.getPoints()])) # starts with the boundary region
             for i,item in enumerate(expr):
-                if item == 1:
+                if int(round(item)) == 1:
                     # when the region is included
                     result = result & self.oldPolys[oldRegionNames[i]]
                     tempRegionList.append(oldRegionNames[i])
@@ -165,7 +168,6 @@ class parseLP:
                         for regionName in tempRegionList:
                             # update the maping dictionary
                             self.newPolysMap[regionName].append(portionName)
-                
                     self.count = self.count + 1
 
 

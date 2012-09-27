@@ -1060,7 +1060,7 @@ class SpecEditorFrame(wx.Frame):
 
         self.subprocess["Simulation Configuration"] = AsynchronousProcessThread(["python","-u",os.path.join(self.proj.ltlmop_root,"lib","configEditor.py"),self.proj.getFilenamePrefix()+".spec"], simConfigCallback, None)
 
-    def _exportDotFile(self):
+    def _exportDotFile(self,with_safety_aut = False):
         proj_copy = deepcopy(self.proj)
         proj_copy.rfi = self.decomposedRFI
         proj_copy.sensor_handler = None
@@ -1071,6 +1071,11 @@ class SpecEditorFrame(wx.Frame):
 
         aut.loadFile(self.proj.getFilenamePrefix()+".aut", self.proj.enabled_sensors, self.proj.enabled_actuators, self.proj.all_customs)
         aut.writeDot(self.proj.getFilenamePrefix()+".dot")
+        if with_safety_aut:
+            aut.loadFile(self.proj.getFilenamePrefix()+"_safety.aut", self.proj.enabled_sensors, self.proj.enabled_actuators, self.proj.all_customs)
+            aut.writeDot(self.proj.getFilenamePrefix()+"_safety.dot")
+
+
 
     def onMenuViewAut(self, event): # wxGlade: SpecEditorFrame.<event_handler>
         if not os.path.isfile(self.proj.getFilenamePrefix()+".aut"):
@@ -1088,7 +1093,7 @@ class SpecEditorFrame(wx.Frame):
 
         self.appendLog("Generating PDF file from automaton...\n", "BLUE")
 
-        self._exportDotFile()
+        self._exportDotFile(True)
 
         def dottyCallback():
             # TODO: Check mtime to make sure it didn't die
@@ -1100,6 +1105,8 @@ class SpecEditorFrame(wx.Frame):
             self.subprocess["Dotty"] = None
 
         self.subprocess["Dotty"] = AsynchronousProcessThread(["dot","-Tpdf","-o%s.pdf" % self.proj.getFilenamePrefix(),"%s.dot" % self.proj.getFilenamePrefix()], dottyCallback, None)
+        if os.path.isfile(self.proj.getFilenamePrefix()+"_safety.aut"):
+            self.subprocess["Dotty"] = AsynchronousProcessThread(["dot","-Tpdf","-o%s_safety.pdf" % self.proj.getFilenamePrefix(),"%s_safety.dot" % self.proj.getFilenamePrefix()], dottyCallback, None)
 
         self.subprocess["Dotty"].startComplete.wait()
         if not self.subprocess["Dotty"].running:

@@ -92,7 +92,7 @@ class SimGUI_Frame(wx.Frame):
         self.robotVel = (0,0)
 
         self.markerPos = None
-		self.robotTraj = []
+        self.robotTraj = []
 
         # Let everyone know we're ready
         self.UDPSockTo.sendto("Hello!",self.addrTo)

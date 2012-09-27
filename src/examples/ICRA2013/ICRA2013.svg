@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="iso-8859-1" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN" "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="279">
+<path style="fill:red;fill-opacity:1.0;fill-rule:evenodd;stroke:black;stroke-width:1.0;" d="M 75.3927, 174.346 L 114.66, 154.974,L 114.66, 99.4764,L 82.199, 120.419 z "/>
+<path style="fill:green;fill-opacity:1.0;fill-rule:evenodd;stroke:black;stroke-width:1.0;" d="M 41.8848, 200 L 75.3927, 174.346,L 82.199, 120.419,L 41.8848, 137.696 z "/>
+<path style="fill:blue;fill-opacity:1.0;fill-rule:evenodd;stroke:black;stroke-width:1.0;" d="M 110.471, 232.984 L 112.565, 204.712,L 114.66, 154.974,L 75.3927, 174.346,L 41.8848, 200,L 41.8848, 200.524 z "/>
+<path style="fill:yellow;fill-opacity:1.0;fill-rule:evenodd;stroke:black;stroke-width:1.0;" d="M 0, 200.524 L 41.8848, 200.524,L 41.8848, 200,L 41.8848, 137.696,L 0, 137.696 z "/>
+<path style="fill:red;fill-opacity:1.0;fill-rule:evenodd;stroke:black;stroke-width:1.0;" d="M 246.597, 217.277 L 253.403, 137.696,L 175.393, 154.974,L 164.921, 209.948,L 169.11, 232.984 z "/>
+<path style="fill:green;fill-opacity:1.0;fill-rule:evenodd;stroke:black;stroke-width:1.0;" d="M 300, 81.6754 L 300, 137.696,L 297.382, 217.277,L 297.382, 265.969,L 246.597, 265.969,L 169.11, 279.581,L 110.471, 279.581,L 0, 200.524,L 0, 137.696,L 103.141, 0,L 175.393, 0 z "/>
+<path style="fill:blue;fill-opacity:1.0;fill-rule:evenodd;stroke:black;stroke-width:1.0;" d="M 110.471, 232.984 L 169.11, 232.984,L 164.921, 209.948,L 112.565, 204.712 z "/>
+<path style="fill:yellow;fill-opacity:1.0;fill-rule:evenodd;stroke:black;stroke-width:1.0;" d="M 253.403, 81.6754 L 175.393, 53.9267,L 175.393, 99.4764 z "/>
+<path style="fill:red;fill-opacity:1.0;fill-rule:evenodd;stroke:black;stroke-width:1.0;" d="M 114.66, 99.4764 L 103.141, 53.9267,L 41.8848, 137.696,L 82.199, 120.419 z "/>
+<path style="fill:green;fill-opacity:1.0;fill-rule:evenodd;stroke:black;stroke-width:1.0;" d="M 175.393, 154.974 L 253.403, 137.696,L 253.403, 81.6754,L 175.393, 99.4764 z "/>
+<path style="fill:blue;fill-opacity:1.0;fill-rule:evenodd;stroke:black;stroke-width:1.0;" d="M 114.66, 99.4764 L 175.393, 99.4764,L 175.393, 53.9267,L 103.141, 53.9267 z "/>
+<path style="fill:yellow;fill-opacity:1.0;fill-rule:evenodd;stroke:black;stroke-width:1.0;" d="M 164.921, 209.948 L 175.393, 154.974,L 114.66, 154.974,L 112.565, 204.712 z "/>
+<path style="fill:red;fill-opacity:1.0;fill-rule:evenodd;stroke:black;stroke-width:1.0;" d="M 114.66, 154.974 L 175.393, 154.974,L 175.393, 99.4764,L 114.66, 99.4764 z "/>
+<path style="fill:green;fill-opacity:1.0;fill-rule:evenodd;stroke:black;stroke-width:1.0;" d="M 300, 81.6754 L 175.393, 0,L 175.393, 53.9267,L 253.403, 81.6754 z "/>
+<path style="fill:blue;fill-opacity:1.0;fill-rule:evenodd;stroke:black;stroke-width:1.0;" d="M 297.382, 217.277 L 300, 137.696,L 253.403, 137.696,L 246.597, 217.277 z "/>
+<path style="fill:yellow;fill-opacity:1.0;fill-rule:evenodd;stroke:black;stroke-width:1.0;" d="M 169.11, 279.581 L 246.597, 265.969,L 246.597, 217.277,L 169.11, 232.984 z "/>
+<path style="fill:red;fill-opacity:1.0;fill-rule:evenodd;stroke:black;stroke-width:1.0;" d="M 110.471, 232.984 L 41.8848, 200.524,L 0, 200.524,L 110.471, 279.581 z "/>
+<path style="fill:green;fill-opacity:1.0;fill-rule:evenodd;stroke:black;stroke-width:1.0;" d="M 41.8848, 137.696 L 103.141, 53.9267,L 103.141, 0,L 0, 137.696 z "/>
+<path style="fill:blue;fill-opacity:1.0;fill-rule:evenodd;stroke:black;stroke-width:1.0;" d="M 253.403, 137.696 L 300, 137.696,L 300, 81.6754,L 253.403, 81.6754 z "/>
+<path style="fill:yellow;fill-opacity:1.0;fill-rule:evenodd;stroke:black;stroke-width:1.0;" d="M 246.597, 265.969 L 297.382, 265.969,L 297.382, 217.277,L 246.597, 217.277 z "/>
+<path style="fill:red;fill-opacity:1.0;fill-rule:evenodd;stroke:black;stroke-width:1.0;" d="M 103.141, 53.9267 L 175.393, 53.9267,L 175.393, 0,L 103.141, 0 z "/>
+<path style="fill:green;fill-opacity:1.0;fill-rule:evenodd;stroke:black;stroke-width:1.0;" d="M 110.471, 279.581 L 169.11, 279.581,L 169.11, 232.984,L 110.471, 232.984 z "/>
+</svg>

@@ -279,7 +279,9 @@ class RegionFileInterface:
 
         # Calculate adjoining faces:
         self.transitions = [[[] for j in range(len(self.regions))] for i in range(len(self.regions))]
-
+        # Calculate transition cost
+        self.transitionCost = [[[] for j in range(len(self.regions))] for i in range(len(self.regions))]
+        
         transitionFaces = {} # This is just a list of faces to draw dotted lines on
 
         for obj in self.regions:
@@ -306,6 +308,8 @@ class RegionFileInterface:
                         if other_obj == obj: continue
                         key2 = self.regions.index(other_obj)
                         self.transitions[key][key2].append(face)
+                        if self.transitionCost[key][key2] is not []:
+                            self.transitionCost[key][key2] = self.calcTransitionCost(obj,other_obj)
             else:
                 # Otherwise mark for deletion (we can't delete it in the middle of iteration)
                 toDelete.append(face)
@@ -315,6 +319,20 @@ class RegionFileInterface:
             del transitionFaces[unused_face]                    
 
         return transitionFaces
+
+    def calcTransitionCost(self,region1,region2):
+        """
+        Calculates the cost(weight) of the transition based on the geometric relations between region1 and region2.
+        The cost of the transition is the Euclidean distance between the centroid of region1 and region2.
+        """
+
+        poly1 = Polygon.Polygon([x for x in region1.getPoints()])
+        poly2 = Polygon.Polygon([x for x in region2.getPoints()])
+        (c1_x,c1_y) = poly1.center()
+        (c2_x,c2_y) = poly2.center()
+        return math.sqrt((c1_x-c2_x)**2+(c1_y-c2_y)**2)
+
+
 
     def getBoundingBox(self):
         if self.regions == []:
@@ -364,8 +382,7 @@ class RegionFileInterface:
 
                 transitionData.append("\t".join([self.regions[region1].name,
                                                  self.regions[region1 + 1 + region2].name] +
-                                                 map(str, faceData)))
-
+                                                 map(str, faceData)+[str(self.transitionCost[region1][region1+1+region2])]))
         calibPoints = []
         for region in self.regions:
             for index, isAP in enumerate(region.alignmentPoints):
@@ -426,11 +443,20 @@ class RegionFileInterface:
 
         # Make an empty adjacency matrix of size (# of regions) x (# of regions)
         self.transitions = [[[] for j in range(len(self.regions))] for i in range(len(self.regions))]
+        self.transitionCost = [[[] for j in range(len(self.regions))] for i in range(len(self.regions))]
         for transition in data["Transitions"]:
             transData = transition.split("\t");
             region1 = self.indexOfRegionWithName(transData[0])
             region2 = self.indexOfRegionWithName(transData[1])
+            
             faces = []
+            cost = []
+            # The if there are odd number of items in the transition data, then the last one is the transition cost
+            if len(transData)%2==1:
+                cost = float(transData[-1])
+                # remove the cost from transition data
+                transData.pop()
+
             for i in range(2, len(transData), 4):
                 p1 = Point(float(transData[i]), float(transData[i+1]))
                 p2 = Point(float(transData[i+2]), float(transData[i+3]))
@@ -439,6 +465,9 @@ class RegionFileInterface:
             # During adjacency matrix reconstruction, we'll mirror over the diagonal
             self.transitions[region1][region2] = faces
             self.transitions[region2][region1] = faces
+            # Matrix for transition cost
+            self.transitionCost[region1][region2] = cost
+            self.transitionCost[region2][region1] = cost
 
         if "CalibrationPoints" in data:
             for point in data["CalibrationPoints"]:

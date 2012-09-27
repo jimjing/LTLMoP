@@ -544,10 +544,12 @@ public class GROneGame {
 	 *            The priority kind.
 	 * @param det
 	 *            true if a deterministic strategy is desired, otherwise false
+     * @param increaseRank
+     *            true if the transitions allow increasing rank
 	 */
 	
 		
-	public boolean calculate_strategy(int kind, BDD ini, boolean det) {
+	public boolean calculate_strategy(int kind, BDD ini, boolean det, boolean increaseRank) {
 		int strategy_kind = kind;
 		Stack<BDD> st_stack = new Stack<BDD>();
 		Stack<Integer> j_stack = new Stack<Integer>();
@@ -693,7 +695,10 @@ public class GROneGame {
                                 while ((next_op.and(y_mem[next_p_j][look_r]).isZero())) {
                                     look_r++;
                                 }
-                                    
+                                if increaseRank {
+                                    look_r = y_mem[next_p_j].length-1;
+                                }
+                                                                        
                                 BDD opt = next_op.and(y_mem[next_p_j][look_r]);
                                 if (!opt.isZero()) {
                                     candidate = opt;
@@ -720,6 +725,9 @@ public class GROneGame {
                                         & (look_r < p_cy)) {
                                     look_r++;
                                 }
+                                if increaseRank {
+                                    look_r = p_cy-1;
+                                {
                                 
                                 BDD opt = next_op.and(y_mem[p_j][look_r]);
                                 if ((look_r != p_cy) && (!opt.isZero())) {
@@ -822,20 +830,20 @@ public class GROneGame {
 
 		
 		
-		if (det) {
-			String res = "";
-		
-			for (RawState state : aut) {
-	            if (state.get_rank() != -1) {
-	                res += state + "\n";
-	            }
-			}
-	
-			System.out.print("\n\n");
-			System.out.print(res);
-			// return null; // res;
-			System.out.print("\n\n");
-		}
+		//if (det) {
+        String res = "";
+
+        for (RawState state : aut) {
+            if (state.get_rank() != -1) {
+                res += state + "\n";
+            }
+        }
+
+        System.out.print("\n\n");
+        System.out.print(res);
+        // return null; // res;
+        System.out.print("\n\n");
+		//}
 		if (strategy_kind == 3) return result; else return false;
 	}
 	

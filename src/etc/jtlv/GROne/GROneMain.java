@@ -36,12 +36,15 @@ public class GROneMain {
         // Parse extra command-line switches
         boolean fs = false;
         boolean gen_safety = false;
+        boolean increaseRank = false;
 
         for (int i = 2; i < args.length; i++) {
             if (args[i].equals("--fastslow")) {
                 fs = true;
             } else if (args[i].equals("--safety")) {
                 gen_safety = true;
+            } else if (args[i].equals("--incRank")) {
+                increaseRank = true;
             } else {
                 System.err.println("Unknown option: " + args[i]);
                 System.err.println("Usage: java GROneMain <smv_file> <ltl_file> [--fastslow] [--safety]");
