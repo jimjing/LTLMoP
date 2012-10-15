@@ -896,6 +896,7 @@ class SpecEditorFrame(wx.Frame):
 
         self.appendLog("Creating automaton...\n", "BLUE")
 
+        realizable, realizableFS, output = compiler._synthesize(with_safety_aut,incRank=True)
         realizable, realizableFS, output = compiler._synthesize(with_safety_aut)
 
         print "\n"
@@ -1071,9 +1072,9 @@ class SpecEditorFrame(wx.Frame):
 
         aut.loadFile(self.proj.getFilenamePrefix()+".aut", self.proj.enabled_sensors, self.proj.enabled_actuators, self.proj.all_customs)
         aut.writeDot(self.proj.getFilenamePrefix()+".dot")
-        if with_safety_aut:
-            aut.loadFile(self.proj.getFilenamePrefix()+"_safety.aut", self.proj.enabled_sensors, self.proj.enabled_actuators, self.proj.all_customs)
-            aut.writeDot(self.proj.getFilenamePrefix()+"_safety.dot")
+        #if with_safety_aut:
+        #    aut.loadFile(self.proj.getFilenamePrefix()+"_safety.aut", self.proj.enabled_sensors, self.proj.enabled_actuators, self.proj.all_customs)
+        #    aut.writeDot(self.proj.getFilenamePrefix()+"_safety.dot")
 
 
 

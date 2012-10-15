@@ -305,8 +305,8 @@ class Automaton:
                 if state.outputs[key] == '1':
                     FILE.write( key + '\\n')
                 else:
-                    FILE.write( '¬' + key + '\\n')
-            #FILE.write( "("+state.rank + ')\\n ')
+                    FILE.write( '~' + key + '\\n')
+            FILE.write( "("+state.rank + ')\\n ')
             FILE.write('\" ];\n')
 
         # Write the transitions with the input labels (only inputs that are true)
@@ -316,9 +316,11 @@ class Automaton:
                 # Check the next state to figure out which inputs have to be on
                 for key in nextState.inputs.keys():
                     if nextState.inputs[key] == '1':
-                        FILE.write( key + '\\n')
+                        #FILE.write( key + '\\n')
+                        FILE.write('\\n')
                     else:
-                        FILE.write( '¬' + key + '\\n')
+                        FILE.write( '~' + key + '\\n')
+
                 FILE.write('\" ];\n')
 
         FILE.write('} \n')

@@ -234,7 +234,7 @@ class SpecCompiler(object):
 
         return (realizable, nonTrivial, to_highlight, output)
 
-    def _synthesize(self, with_safety_aut=False):
+    def _synthesize(self, with_safety_aut=False, incRank=False):
         cmd = self._getGROneCommand("GROneMain")
         if cmd is None:
             return (False, False, "")
@@ -244,6 +244,9 @@ class SpecCompiler(object):
 
         if self.proj.compile_options["fastslow"]:
             cmd.append("--fastslow")
+
+        if incRank:
+            cmd.append('--incRank')
 
         subp = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, close_fds=False)
         
@@ -266,7 +269,7 @@ class SpecCompiler(object):
 
         return (realizable, realizableFS, output)
 
-    def compile(self, with_safety_aut=False):
+    def compile(self, with_safety_aut=False,incRank=False):
         self._decompose()
         self._writeSMVFile()
         tb = self._writeLTLFile()
@@ -276,5 +279,5 @@ class SpecCompiler(object):
             return 
 
         #self._checkForEmptyGaits()
-        self._synthesize(with_safety_aut)
+        self._synthesize(with_safety_aut,incRank)
 
