@@ -906,6 +906,17 @@ public class GROneGame {
                     new_state = aut.elementAt(nidx);
                 }
 
+                if (new_state.get_sat_goals() == null) {
+                    // Figure out which goals are satisfied by this state
+                    for (int j = 0; j < sysJustNum; j++) {
+                        //p_st.printSet();
+                        //sys.justiceAt(j).printSet();
+                        if (!p_st.and(sys.justiceAt(j)).isZero()) {
+                            new_state.add_sat_goal(j);    
+                        }
+                    }
+                }
+
                 BDD next_op = Env.unprime(sys.trans().and(p_st).exist(env.moduleUnprimeVars().union(sys.moduleUnprimeVars())));
 
                 BDDIterator next_iterator = next_op.iterator(env.moduleUnprimeVars().union(sys.moduleUnprimeVars()));
@@ -1296,6 +1307,7 @@ public class GROneGame {
 	private class RawState {
 		private int id;
 		private int rank;
+        private Vector<Integer> sat_goals;
 		private BDD state;
 		private Vector<RawState> succ;
 
@@ -1304,7 +1316,19 @@ public class GROneGame {
 			this.state = state;
 			this.rank = rank;
 			succ = new Vector<RawState>(10);
+            sat_goals = null;
 		}
+
+        public void add_sat_goal(int jx) {
+            if (sat_goals == null) {
+                sat_goals = new Vector<Integer>(0);
+            }
+            sat_goals.add(jx);
+        }
+
+        public Vector<Integer> get_sat_goals() {
+            return sat_goals;
+        }
 
 		public void add_succ(RawState to_add) {
 			succ.add(to_add);
@@ -1352,8 +1376,16 @@ public class GROneGame {
 		}
 
 		public String toString() {
-			String res = "State " + id + " with rank " + rank + " -> "
-					+ state.toStringWithDomains(Env.stringer) + "\n";
+            String res = "";
+
+            if (sat_goals == null) {
+                res = "State " + id + " with rank " + rank + " -> "
+                        + state.toStringWithDomains(Env.stringer) + "\n";
+            } else {
+                res = "State " + id + " with rank " + sat_goals.toString() + " -> "
+                        + state.toStringWithDomains(Env.stringer) + "\n";
+            }
+
 			if (succ.isEmpty()) {
 				res += "\tWith no successors.";
 			} else {

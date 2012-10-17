@@ -952,7 +952,7 @@ class SpecEditorFrame(wx.Frame):
         sys.stdout = redir
         sys.stderr = redir
 
-        subprocess.Popen(["python", "-u", os.path.join("lib","execute.py"), "-a", self.proj.getFilenamePrefix() + ".aut", "-s", self.proj.getFilenamePrefix() + ".spec"])
+        subprocess.Popen(["python", "-u", os.path.join("lib","execute.py"), "-a", self.proj.getFilenamePrefix() + "_safety.aut", "-s", self.proj.getFilenamePrefix() + ".spec"])
 
         sys.stdout = sys.__stdout__
         sys.stderr = sys.__stderr__
@@ -1069,12 +1069,12 @@ class SpecEditorFrame(wx.Frame):
         proj_copy.h_instance = None
 
         aut = fsa.Automaton(proj_copy)
-
-        aut.loadFile(self.proj.getFilenamePrefix()+".aut", self.proj.enabled_sensors, self.proj.enabled_actuators, self.proj.all_customs)
-        aut.writeDot(self.proj.getFilenamePrefix()+".dot")
-        #if with_safety_aut:
-        #    aut.loadFile(self.proj.getFilenamePrefix()+"_safety.aut", self.proj.enabled_sensors, self.proj.enabled_actuators, self.proj.all_customs)
-        #    aut.writeDot(self.proj.getFilenamePrefix()+"_safety.dot")
+        aut_safety = fsa.Automaton(proj_copy)
+        #aut.loadFile(self.proj.getFilenamePrefix()+".aut", self.proj.enabled_sensors, self.proj.enabled_actuators, self.proj.all_customs)
+        #aut.writeDot(self.proj.getFilenamePrefix()+".dot")
+        if with_safety_aut:
+            aut.loadFile(self.proj.getFilenamePrefix()+"_safety.aut", self.proj.enabled_sensors, self.proj.enabled_actuators, self.proj.all_customs)
+            aut.writeDot(self.proj.getFilenamePrefix()+"_safety.dot")
 
 
 
@@ -1105,7 +1105,7 @@ class SpecEditorFrame(wx.Frame):
 
             self.subprocess["Dotty"] = None
 
-        self.subprocess["Dotty"] = AsynchronousProcessThread(["dot","-Tpdf","-o%s.pdf" % self.proj.getFilenamePrefix(),"%s.dot" % self.proj.getFilenamePrefix()], dottyCallback, None)
+        #self.subprocess["Dotty"] = AsynchronousProcessThread(["dot","-Tpdf","-o%s.pdf" % self.proj.getFilenamePrefix(),"%s.dot" % self.proj.getFilenamePrefix()], dottyCallback, None)
         if os.path.isfile(self.proj.getFilenamePrefix()+"_safety.aut"):
             self.subprocess["Dotty"] = AsynchronousProcessThread(["dot","-Tpdf","-o%s_safety.pdf" % self.proj.getFilenamePrefix(),"%s_safety.dot" % self.proj.getFilenamePrefix()], dottyCallback, None)
 

@@ -3,6 +3,7 @@
 
 import math, re, sys, random, os, subprocess, time, copy
 import itertools
+from json import loads
 import random
 import numpy as np
 from regions import *
@@ -89,7 +90,9 @@ class Optimizer():
                 self.weight[state][traState]=self.calcWeight(state,traState)
 
         self.weightedAut.writeDot('test.dot')
-        
+        print "Finish constructing weighted automaton"
+        print
+
     def calcWeight(self,state1,state2):
         region1 = self.proj.rfi.regions[self.FSA.regionFromState(state1)]
         region2 = self.proj.rfi.regions[self.FSA.regionFromState(state2)]
@@ -114,7 +117,7 @@ class Optimizer():
                     print result[state][traState]
         raw_input()
         """
-    def findGoalStates(self,envState=None):
+    def findGoalStates_withOrder(self,envState=None):
         for state in self.weightedAut.states:
             for traState in state.transitions:
                 if (traState.rank != state.rank) and state not in self.stateWithNoIncoming:
@@ -123,7 +126,21 @@ class Optimizer():
                     self.goalStates[state.rank].append(state)
                     break
                     
+    def findGoalStates(self,envState=None):
+        self.goalStates = {}
+        for state in self.weightedAut.states:
+            # remove state initially with no incoming from the graph
+            if state not in self.stateWithNoIncoming:
+                goalList = loads(state.rank)
+                for goal in goalList:
+                    if goal not in self.goalStates.keys():
+                        self.goalStates.update({goal:[]})
+                    self.goalStates[goal].append(state)
+
     def constructWeightedGraph(self):
+        print "Constructing weighted graph"
+        print
+
         self.weightedGraph = {}
         for rank,goalStates in self.goalStates.iteritems():
             for state in goalStates:
@@ -133,8 +150,14 @@ class Optimizer():
             for traState in self.weightedGraph.keys():
                 if state != traState:
                     (self.weightedGraph[state][traState],path)=self.calcShortestPath(state,traState)
-        
-                    print "DONE"
+                    """
+                    print self.weight[state]
+                    print (traState in state.transitions)
+                    print
+                    print self.weight[traState]
+                    self.weightedGraph[state].update({traState:self.weight[state][traState]})
+                    """
+                    #print "DONE"
         """
         for state in self.weightedGraph: 
             for traState in self.weightedGraph[state]:
@@ -149,7 +172,7 @@ class Optimizer():
     
         tabuResult =  self.TabuSearch(initialSolution)
         for item in tabuResult:
-            print item[0],self.FSA.getAnnotatedRegionName(self.FSA.regionFromState(item[1]))
+            print item[0],item[1].name,self.FSA.getAnnotatedRegionName(self.FSA.regionFromState(item[1]))
 
     def TabuSearch(self,initialSolution = None):
         bestSolution = []
@@ -169,13 +192,14 @@ class Optimizer():
         tabuListSwap = np.zeros([numOfGoals,numOfGoals])
         tabuListChange = np.zeros([1,numOfGoals])
         # value for tabu list
-        swap_K = numOfGoals*(numOfGoals-1)/2-1
-        change_K = numOfGoals-1
+        swap_K = np.max([1,numOfGoals*(numOfGoals-1)/2-2])
+        change_K = np.max([1,numOfGoals-2])
         
         AL = self.tabuCost([currentSolution]) # for aspriation criterion
         iterNum = 1
         while iterNum<self.maxIter:
             print iterNum
+            """
             print 'CurrentSolution'
             for item in currentSolution:
                 print item[0],self.FSA.getAnnotatedRegionName(self.FSA.regionFromState(item[1]))
@@ -183,7 +207,7 @@ class Optimizer():
             print self.tabuCost([currentSolution])[0]
             print
             print
-
+            """
             (neighborList,pertMode,pertIndex) = self.tabuNeighbors(currentSolution)
             neighborCostList = self.tabuCost(neighborList)
         
@@ -296,10 +320,47 @@ class Optimizer():
             tabuListChange[tabuListChange<0]=0
             tabuListSwap -= 1
             tabuListSwap[tabuListSwap<0]=0
+        return self.findBestSolution(bestSolution)
 
-        return bestSolution
+    def updateLTL(self):
+        # Load in LTL file 
+        if os.path.exists(self.proj.getFilenamePrefix()+".ltl"):
+            f = open(self.proj.getFilenamePrefix()+".ltl","r")
+            outFile = open(self.proj.getFilenamePrefix()+".ltl","r")
+            ltl = "".join(f.readlines())
+            f.close()
+            self.text_ctrl_LTL.SetValue(ltl)
+        filePreFix = self.proj
+        re.compile(r"^\t*\s*(?P<goal>\[\]\<\>.+)&*(?=\s*$)")
 
+
+    def findBestSolution(self,solution):
+        result = []
+
+        collapsedSolutionList = self.collapseSolution(solution)
+        collapsedSolutionCostList = self.cost(collapsedSolutionList)
+        bestCollapsedSolutionCost = np.min(collapsedSolutionCostList)
+        bestCollapsedSolutionIndex = collapsedSolutionCostList.index(bestCollapsedSolutionCost) 
+        bestCollapsedSolution = collapsedSolutionList[bestCollapsedSolutionIndex]
+        for item_best in bestCollapsedSolution:
+            indexWithSameState = [i for i,item in enumerate(solution) if item[1]==item_best[1]]
+            for index in indexWithSameState: result.append(solution[index]) 
+        return result
     def tabuCost(self,solutionList):
+        costList = [[] for x in range(len(solutionList))]
+
+        for i,solution in enumerate(solutionList):
+            collapsedSolutionList = self.collapseSolution(solution)
+            collapsedSolutionCostList = self.cost(collapsedSolutionList)
+        
+            bestCollapsedSolutionCost = np.min(collapsedSolutionCostList)
+            #bestCollapsedSolutionIndex = collapsedSolutionCostList.index(bestCollapsedSolutionCost) 
+
+            costList[i] = bestCollapsedSolutionCost
+
+        return costList
+
+    def cost(self,solutionList):
         costList = [[] for x in range(len(solutionList))]
 
         for i,solution in enumerate(solutionList):
@@ -312,7 +373,27 @@ class Optimizer():
             costList[i] = cost
 
         return costList
+
+    def collapseSolution(self,solution):
+        state_goal_mapping = {}
+        for index, item in enumerate(solution):
+            goalState = item[1]
+            if goalState not in state_goal_mapping.keys():
+                state_goal_mapping.update({goalState:[]})
+            state_goal_mapping[goalState].append(index)
         
+        indexLists = []
+        for goalState,indexList in state_goal_mapping.iteritems():
+            indexLists.append(indexList)        
+
+        indexCombos = itertools.product(*indexLists)
+        
+        collapsedSolution = []
+        for indexCombo in indexCombos:
+            collapsedSolution.append([solution[x] for x in range(len(solution)) if x in indexCombo])
+        
+        return collapsedSolution
+
     def pairwise(self,iterable):
         a, b = itertools.tee(iterable)
         next(b, None)

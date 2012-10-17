@@ -104,6 +104,9 @@ class Automaton:
             print "Outputs: "
             for key, val in state.outputs.iteritems():
                 print key + " = " + val
+            stateRegion = self.regionFromState(state)
+            print self.getAnnotatedRegionName(stateRegion)
+            print state.rank
             print "Transitions: "
             for trans in state.transitions:
                 print trans.name
@@ -177,7 +180,7 @@ class Automaton:
         ###################
 
         # A magical regex to slurp up a state and its information all at once
-        p = re.compile(r"State (?P<num>\d+) with rank (?P<rank>[\d\(\),-]+) -> <(?P<conds>(?:\w+:\d(?:, )?)+)>", re.IGNORECASE|re.MULTILINE)
+        p = re.compile(r"State (?P<num>\d+) with rank (?P<rank>[\d\(\)\[\]\s,-]+) -> <(?P<conds>(?:\w+:\d(?:, )?)+)>", re.IGNORECASE|re.MULTILINE)
         self.last_next_states = []
         self.next_state = None
         self.next_region = None
@@ -299,6 +302,7 @@ class Automaton:
         for state in self.states:
             FILE.write('\ts'+ state.name + ' [style=\"bold\",width=0,height=0, fontsize = 20, label=\"')
             stateRegion = self.regionFromState(state)
+            FILE.write(state.name + '\\n')
             FILE.write( self.getAnnotatedRegionName(stateRegion) + '\\n')
             for key in state.outputs.keys():
                 if re.match('^bit\d+$',key): continue

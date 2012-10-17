@@ -3,11 +3,12 @@ def shortestpath(graph,start,end,visited=[],distances={},predecessors={}):
     """Find the shortest path between start and end nodes in a graph"""
     # we've found our end node, now find the path to it, and return
     if end in visited:
+        saveEnd = end;
         path=[]
         while end != None:
             path.append(end)
             end=predecessors.get(end,None)
-        return distances[start], path[::-1]
+        return distances[saveEnd], path[::-1]
     # detect if it's the first time through, set current distance to zero
     if not visited: distances[start]=0
     # process neighbors as per algorithm, keep track of predecessors
@@ -26,6 +27,7 @@ def shortestpath(graph,start,end,visited=[],distances={},predecessors={}):
         return shortestpath(graph,end,end,visited,distances,predecessors)
     else:
         closestnode = min(unvisiteds, key=unvisiteds.get)
+
     # now we can take the closest node and recurse, making it current
     return shortestpath(graph,closestnode,end,visited,distances,predecessors)
 
