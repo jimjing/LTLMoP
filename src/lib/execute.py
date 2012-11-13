@@ -211,7 +211,7 @@ def main(argv):
     opt = execOptimizer.Optimizer()
     opt.proj = proj
     opt.FSA = FSA
-    opt.constructWeightedAutomaton({'daytime':'0'})
+    opt.constructWeightedAutomaton()
     opt.findGoalStates()
     opt.constructWeightedGraph()
     opt.findOrder()

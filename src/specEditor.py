@@ -1070,11 +1070,11 @@ class SpecEditorFrame(wx.Frame):
 
         aut = fsa.Automaton(proj_copy)
         aut_safety = fsa.Automaton(proj_copy)
-        #aut.loadFile(self.proj.getFilenamePrefix()+".aut", self.proj.enabled_sensors, self.proj.enabled_actuators, self.proj.all_customs)
-        #aut.writeDot(self.proj.getFilenamePrefix()+".dot")
+        aut.loadFile(self.proj.getFilenamePrefix()+".aut", self.proj.enabled_sensors, self.proj.enabled_actuators, self.proj.all_customs)
+        aut.writeDot(self.proj.getFilenamePrefix()+".dot")
         if with_safety_aut:
-            aut.loadFile(self.proj.getFilenamePrefix()+"_safety.aut", self.proj.enabled_sensors, self.proj.enabled_actuators, self.proj.all_customs)
-            aut.writeDot(self.proj.getFilenamePrefix()+"_safety.dot")
+            aut_safety.loadFile(self.proj.getFilenamePrefix()+"_safety.aut", self.proj.enabled_sensors, self.proj.enabled_actuators, self.proj.all_customs)
+            aut_safety.writeDot(self.proj.getFilenamePrefix()+"_safety.dot")
 
 
 

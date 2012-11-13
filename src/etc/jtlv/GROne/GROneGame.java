@@ -552,7 +552,7 @@ public class GROneGame {
 	public boolean calculate_strategy(int kind, BDD ini, boolean det) {
 		int strategy_kind = kind;
         boolean increaseRank = true;
-        det = false;
+        //det = false;
 		Stack<BDD> st_stack = new Stack<BDD>();
 		Stack<Integer> j_stack = new Stack<Integer>();
 		Stack<RawState> aut = new Stack<RawState>();
@@ -698,7 +698,7 @@ public class GROneGame {
                                     look_r++;
                                 }
                                 //if (increaseRank) {
-                                look_r = y_mem[next_p_j].length-1;
+//                                look_r = y_mem[next_p_j].length-1;
                                 //}
                                                                         
                                 BDD opt = next_op.and(y_mem[next_p_j][look_r]);
@@ -709,10 +709,10 @@ public class GROneGame {
                                 }
 
                                 // If possible, trim down the candidates to prioritize movement-less transitions
-                                //BDD current_region = p_st.exist(env.moduleUnprimeVars()).exist(nonRegionProps);
-                                //if (!candidate.and(current_region).isZero()) {
-                                //    candidate = candidate.and(current_region); 
-                                //}
+                                BDD current_region = p_st.exist(env.moduleUnprimeVars()).exist(nonRegionProps);
+                                if (!candidate.and(current_region).isZero()) {
+                                    candidate = candidate.and(current_region); 
+                                }
                             }
                         }                       
                         // b - second successor option in the strategy.
@@ -728,7 +728,7 @@ public class GROneGame {
                                     look_r++;
                                 }
                                 //if (increaseRank) {
-                                look_r = y_mem[p_j].length-1;
+  //                              look_r = y_mem[p_j].length-1;
                                 //} 
                                 
                                 BDD opt = next_op.and(y_mem[p_j][look_r]);

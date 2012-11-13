@@ -320,7 +320,7 @@ class Automaton:
                 # Check the next state to figure out which inputs have to be on
                 for key in nextState.inputs.keys():
                     if nextState.inputs[key] == '1':
-                        #FILE.write( key + '\\n')
+                        FILE.write( key + '\\n')
                         FILE.write('\\n')
                     else:
                         FILE.write( '~' + key + '\\n')
