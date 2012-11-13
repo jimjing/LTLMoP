@@ -33,6 +33,7 @@ class Optimizer():
         print "Calculating Transition Weights"
         # copy the full FSA
         self.weightedAut = copy.deepcopy(self.FSA)
+        self.stateWithNoIncoming=[]
         if envState != None:
 
             # find state initially has no incoming transition
@@ -132,6 +133,8 @@ class Optimizer():
             # remove state initially with no incoming from the graph
             if state not in self.stateWithNoIncoming:
                 goalList = loads(state.rank)
+                if isinstance(goalList,int):
+                    goalList = [goalList]
                 for goal in goalList:
                     if goal not in self.goalStates.keys():
                         self.goalStates.update({goal:[]})
