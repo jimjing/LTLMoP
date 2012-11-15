@@ -1105,7 +1105,7 @@ class SpecEditorFrame(wx.Frame):
 
             self.subprocess["Dotty"] = None
 
-        #self.subprocess["Dotty"] = AsynchronousProcessThread(["dot","-Tpdf","-o%s.pdf" % self.proj.getFilenamePrefix(),"%s.dot" % self.proj.getFilenamePrefix()], dottyCallback, None)
+        self.subprocess["Dotty"] = AsynchronousProcessThread(["dot","-Tpdf","-o%s.pdf" % self.proj.getFilenamePrefix(),"%s.dot" % self.proj.getFilenamePrefix()], dottyCallback, None)
         if os.path.isfile(self.proj.getFilenamePrefix()+"_safety.aut"):
             self.subprocess["Dotty"] = AsynchronousProcessThread(["dot","-Tpdf","-o%s_safety.pdf" % self.proj.getFilenamePrefix(),"%s_safety.dot" % self.proj.getFilenamePrefix()], dottyCallback, None)
 
