@@ -14,8 +14,8 @@ class motionControlHandler:
         Motion planning controller for CKBot robot
         """
         # Get references to handlers we'll need to communicate with.
-        self.drive_handler = proj.drive_handler
-        self.pose_handler = proj.pose_handler
+        self.drive_handler = proj.h_instance['drive']
+        self.pose_handler = proj.h_instance['pose']
         
         # Other useful definitions.
         self.vx = 0

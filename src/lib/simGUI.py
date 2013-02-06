@@ -15,7 +15,7 @@ import math, time, sys, os, re
 import wxversion
 import wx, wx.richtext, wx.grid
 import threading
-import project, mapRenderer
+import project, mapRenderer, regions
 from regions import *
 import Polygon, Polygon.IO
 from socket import *
@@ -58,6 +58,9 @@ class SimGUI_Frame(wx.Frame):
         self.window_1_pane_1.Bind(wx.EVT_PAINT, self.onPaint)
         self.Bind(wx.EVT_ERASE_BACKGROUND, self.onEraseBG)
 
+        self.proj = project.Project()
+        self.proj.setSilent(True)
+
         # Make status bar at bottom.
 
         self.sb = wx.StatusBar(self)
@@ -97,14 +100,17 @@ class SimGUI_Frame(wx.Frame):
         # Let everyone know we're ready
         self.UDPSockTo.sendto("Hello!",self.addrTo)
 
-    def setMapImage(self, filename):
-        # Load and display the map
-        self.proj = project.Project()
-        self.proj.setSilent(True)
+    def loadRegionFile(self, filename):
+        self.proj.rfi = regions.RegionFileInterface()
+        self.proj.rfi.readFile(filename)
+
+        self.Bind(wx.EVT_SIZE, self.onResize, self)
+        self.onResize()
+
+    def loadSpecFile(self, filename):
         self.proj.loadProject(filename)
 
         self.Bind(wx.EVT_SIZE, self.onResize, self)
-
         self.onResize()
 
     def controllerListen(self):
@@ -154,8 +160,10 @@ class SimGUI_Frame(wx.Frame):
             elif input.startswith("Crossed border"):
                 if self.checkbox_statusLog_border.GetValue():
                     wx.CallAfter(self.appendLog, input + "\n", color="CYAN") 
-            elif input.startswith("BG:"):
-                wx.CallAfter(self.setMapImage, input.split(":",1)[1])
+            elif input.startswith("SPEC:"):
+                wx.CallAfter(self.loadSpecFile, input.split(":",1)[1])
+            elif input.startswith("REGIONS:"):
+                wx.CallAfter(self.loadRegionFile, input.split(":",1)[1])
             else:
                 if self.checkbox_statusLog_other.GetValue():
                     if input != "":
@@ -219,7 +227,7 @@ class SimGUI_Frame(wx.Frame):
     def onResize(self, event=None): # wxGlade: SimGUI_Frame.<event_handler>
         size = self.window_1_pane_1.GetSize()
         self.mapBitmap = wx.EmptyBitmap(size.x, size.y)
-        self.mapScale = mapRenderer.drawMap(self.mapBitmap, self.proj.rfi, scaleToFit=True, drawLabels=False, memory=True)
+        self.mapScale = mapRenderer.drawMap(self.mapBitmap, self.proj.rfi, scaleToFit=True, drawLabels=True, memory=True)
 
         self.Refresh()
         self.Update()

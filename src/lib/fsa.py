@@ -407,7 +407,9 @@ class Automaton:
 
         self.current_region = init_region
 
-        for output in (self.actuators + self.custom_props):
+        for output in self.states[0].outputs.keys():
+            # Skip any "bitX" region encodings
+            if re.match('^bit\d+$', output): continue
             self.current_outputs[output] = (output in init_outputs)
 
         candidates = self.findTransitionableStates(initial=True)

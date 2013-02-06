@@ -294,6 +294,13 @@ class RegionFileInterface:
                     if other_obj.position == obj.position and \
                        [x for x in other_obj.getPoints()] == [x for x in obj.getPoints()]:
                         ignore = True
+
+                # Make sure edge is wide enough for robot
+                dx = face[1][0] - face[0][0]
+                dy = face[1][1] - face[0][1]
+                ROBOT_WIDTH = 0 #60 # px
+                if math.sqrt(dx*dx + dy*dy) < ROBOT_WIDTH:
+                    ignore = True
     
                 if not ignore:
                     transitionFaces[face].append(obj)

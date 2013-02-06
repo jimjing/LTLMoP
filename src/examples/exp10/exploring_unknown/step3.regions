@@ -1,0 +1,35 @@
+# This is a region definition file for the LTLMoP toolkit.
+# Format details are described at the beginning of each section below.
+# Note that all values are separated by *tabs*.
+
+Background: # Relative path of background image file
+None
+
+CalibrationPoints: # Vertices to use for map calibration: (vertex_region_name, vertex_index)
+office1	1
+
+Obstacles: # Names of regions to treat as obstacles
+
+Regions: # Name, Type, Pos X, Pos Y, Width, Height, Color R, Color G, Color B, Vertices (x1, y1, x2, y2, ...)
+boundary	poly	400	111	400	347	160	32	240	400	0	400	300	199	300	199	347	144	347	144	300	144	340	100	340	100	300	0	300	0	200	194	200	194	27	242	27	242	200	300	200	300	0
+hall2	poly	400	311	100	100	0	255	128	0	0	100	0	100	100	0	100
+hall1	poly	500	311	300	100	255	0	0	0	0	94	0	142	0	200	0	300	0	300	100	99	100	44	100	0	100
+classroom1	poly	700	111	100	100	255	255	128	0	0	100	0	100	100	0	100
+office1	poly	700	211	100	100	0	100	255	0	0	100	0	100	100	0	100
+tempNew1	poly	594	138	48	173	81	113	133	48	0	48	173	0	173	0	0
+
+
+
+
+Thumbnail: # Relative path of image file that has region shapes overlayed on background image
+step_simbg.png
+
+Transitions: # Region 1 Name, Region 2 Name, Bidirectional transition faces (face1_x1, face1_y1, face1_x2, face1_y2, face2_x1, ...)
+boundary	hall2	400	311	500	311	400	411	500	411	400	311	400	411
+boundary	hall1	500	411	800	411	500	311	700	311	800	311	800	411
+boundary	classroom1	700	111	700	112	700	112	700	211	700	111	800	111	800	111	800	211
+boundary	office1	800	211	800	311	700	211	700	311
+hall2	hall1	500	311	500	411
+hall1	office1	700	311	800	311
+classroom1	office1	700	211	800	211
+
