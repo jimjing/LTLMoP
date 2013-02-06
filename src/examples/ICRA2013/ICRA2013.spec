@@ -52,14 +52,14 @@ Robot starts in Room2
 #group office is Room2,Room5
 #group classroom is Room1,Tunnel2,Room3,Room4
 group classroom is Room3,Room1,Room4
-group office is Room5,Room2
+group office is Room1,Room2,Room5,Room4,Room3
 
 
 #if you are not sensing daytime then visit Room2
 if you are not sensing daytime then visit any office
-if you are not sensing daytime then visit Room4
-if you are not sensing daytime then visit Room1
-if you are not sensing daytime then visit Room3
+#if you are not sensing daytime then visit Room4
+#if you are not sensing daytime then visit Room1
+#if you are not sensing daytime then visit Room3
 if you are sensing daytime then visit all office
 
 #if you are not sensing daytime then visit Room1

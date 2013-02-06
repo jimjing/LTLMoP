@@ -201,25 +201,26 @@ def main(argv):
     success = FSA.loadFile(aut_file, proj.enabled_sensors, proj.enabled_actuators, proj.all_customs)
     if not success: return
 
-    #print "Loading safety automaton..."
+    print "Loading safety automaton..."
     # Load safety automaton
-    #safetyFSA = fsa.Automaton(proj)
+    safetyFSA = fsa.Automaton(proj)
 
-    #success = safetyFSA.loadFile(aut_file.replace('.aut','_safety.aut'), proj.enabled_sensors, proj.enabled_actuators, proj.all_customs)
-    #if not success: return
+    success = safetyFSA.loadFile(aut_file.replace('.aut','_safety.aut'), proj.enabled_sensors, proj.enabled_actuators, proj.all_customs)
+    if not success: return
+
 
     opt = execOptimizer.Optimizer()
     opt.proj = proj
-    opt.FSA = FSA
-    opt.constructWeightedAutomaton()
+    opt.FSA = safetyFSA
+    opt.constructWeightedAutomaton({'daytime':'1'})
     opt.findGoalStates()
     opt.constructWeightedGraph()
     opt.findOrder()
+    opt.updateLTL()
     #opt.calcShortestPath()
     #############################
     # Begin automaton execution #
     #############################
-
 
     last_gui_update_time = 0
 

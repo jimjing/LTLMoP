@@ -23,7 +23,7 @@ class Optimizer():
         self.weightedGraph = None
         
         # For heuristic search
-        self.maxIter = 2000
+        self.maxIter =1000
         self.maxSwap = 10
     def constructWeightedAutomaton(self, envState=None):
         """
@@ -173,8 +173,8 @@ class Optimizer():
         for rank,goalStates in self.goalStates.iteritems():
             initialSolution.append([rank,goalStates[0]])
     
-        tabuResult =  self.TabuSearch(initialSolution)
-        for item in tabuResult:
+        self.tabuResult =  self.TabuSearch(initialSolution)
+        for item in self.tabuResult:
             print item[0],item[1].name,self.FSA.getAnnotatedRegionName(self.FSA.regionFromState(item[1]))
 
     def TabuSearch(self,initialSolution = None):
@@ -201,7 +201,7 @@ class Optimizer():
         AL = self.tabuCost([currentSolution]) # for aspriation criterion
         iterNum = 1
         while iterNum<self.maxIter:
-            print iterNum
+            #print iterNum
             """
             print 'CurrentSolution'
             for item in currentSolution:
@@ -327,14 +327,41 @@ class Optimizer():
 
     def updateLTL(self):
         # Load in LTL file 
+        sysSafeLTL = {}
+        lineIndex = {}
+        rank = 0
+        goalRE = re.compile(r"^(?P<goal>\[\]\<\>.+)")
+
         if os.path.exists(self.proj.getFilenamePrefix()+".ltl"):
             f = open(self.proj.getFilenamePrefix()+".ltl","r")
-            outFile = open(self.proj.getFilenamePrefix()+".ltl","r")
-            ltl = "".join(f.readlines())
+            originalLTL = f.readlines()
             f.close()
-            self.text_ctrl_LTL.SetValue(ltl)
-        filePreFix = self.proj
-        re.compile(r"^\t*\s*(?P<goal>\[\]\<\>.+)&*(?=\s*$)")
+
+        # We need to skip the part for Env
+        sysLTL = False
+        for i,line in enumerate(originalLTL):
+            if re.match('LTLSPEC -- Guarantees',line):
+                sysLTL = True
+            if sysLTL:
+                # remove the space, tab, and logic and symbol of each line
+                newline = line.strip(' \t&\n')
+                if goalRE.findall(newline):
+                    sysSafeLTL[rank] = goalRE.findall(newline)[0]
+                    lineIndex[rank] = i
+                    rank = rank + 1
+
+        for i,result in enumerate(self.tabuResult):
+            originalLTL[lineIndex[i]] = originalLTL[lineIndex[i]].replace(sysSafeLTL[i],sysSafeLTL[result[0]])   
+            
+        # write the new LTL files
+        outfile = open(self.proj.getFilenamePrefix()+".ltl","w")
+        for line in originalLTL:
+            outfile.write(line)
+        outfile.close()
+        
+        #for m in goalRE.finditer(ltl):
+            #print 'Goal',m.group('goal')
+        #outFile.close()
 
 
     def findBestSolution(self,solution):
@@ -365,14 +392,12 @@ class Optimizer():
 
     def cost(self,solutionList):
         costList = [[] for x in range(len(solutionList))]
-
         for i,solution in enumerate(solutionList):
             cost = 0
             transPair = self.pairwise(solution)
             for tran in transPair:
                 cost += self.weightedGraph[tran[0][1]][tran[1][1]]
-
-            cost += self.weightedGraph[solution[-1][1]][solution[1][1]]
+            cost += self.weightedGraph[solution[-1][1]][solution[0][1]]
             costList[i] = cost
 
         return costList
