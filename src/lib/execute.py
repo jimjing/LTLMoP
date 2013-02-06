@@ -230,41 +230,40 @@ class LTLMoPExecutor(object):
         self.next_proj = new_proj
         
     def checkForInternalFlags(self):
-        for k in sorted(self.aut.current_outputs.keys()): # sort ensures group updates happen before resynthesis when triggered in same state
-            # Only trigger on rising edges
-            if not (int(self.prev_outputs[k]) == 0 and int(self.aut.current_outputs[k]) == 1):
-                continue
+ #       for k in sorted(self.aut.current_outputs.keys()): # sort ensures group updates happen before resynthesis when triggered in same state
+ #           # Only trigger on rising edges
+ #           if not (int(self.prev_outputs[k]) == 0 and int(self.aut.current_outputs[k]) == 1):
+ #               continue
 
-            m = re.match("_(?P<action>add_to|remove_from)_(?P<groupName>\w+)", k)
-            if m is not None:
-                # Decide referent by currently-true sensor values (we assume these are mutually exclusive)
-                # HACK/FIXME: don't hardcode sensor prop names
-                if int(self.aut.next_state.inputs['region_added']) == 1:
-                    referent = self.proj.h_instance['sensor'][self.proj.currentConfig.main_robot].addedRegions
-                #elif int(self.aut.next_state.inputs['region_removed']) == 1:
-                #    referent = self.proj.h_instance['sensor'][self.proj.currentConfig.main_robot].removedRegions
-                else:
-                    # assume we are talking about the current region
-                    #referent = set([self.proj.rfiold.regions[self._getCurrentRegionFromPose(rfi=self.proj.rfiold)].name])
-                    referent = None
-                    for rname, rlist in self.proj.regionMapping.iteritems():
-                        if self.proj.rfi.regions[self.aut.current_region].name in rlist:
-                            referent = set([rname])
-                            break
+ #           m = re.match("_(?P<action>add_to|remove_from)_(?P<groupName>\w+)", k)
+ #           if m is not None:
+ #               # Decide referent by currently-true sensor values (we assume these are mutually exclusive)
+ #               # HACK/FIXME: don't hardcode sensor prop names
+ #               if int(self.aut.next_state.inputs['region_added']) == 1:
+ #                   referent = self.proj.h_instance['sensor'][self.proj.currentConfig.main_robot].addedRegions
+ #               #elif int(self.aut.next_state.inputs['region_removed']) == 1:
+ #               #    referent = self.proj.h_instance['sensor'][self.proj.currentConfig.main_robot].removedRegions
+ #               else:
+ #                   # assume we are talking about the current region
+ #                   #referent = set([self.proj.rfiold.regions[self._getCurrentRegionFromPose(rfi=self.proj.rfiold)].name])
+ #                   referent = None
+ #                   for rname, rlist in self.proj.regionMapping.iteritems():
+ #                       if self.proj.rfi.regions[self.aut.current_region].name in rlist:
+ #                           referent = set([rname])
+ #                           break
 
-                    if referent is None:  # This shouldn't happen
-                        print "ERROR: Couldn't find region to add/remove"
-                
-                if m.group('action') == "add_to":
-                    print "Added region(s) %s to group %s." % (", ".join(referent), m.group('groupName'))
-                    self.rewriteSpec(m.group('groupName'), 'add', referent)
-                elif m.group('action') == "remove_from":
-                    print "Removed region(s) %s from group %s." % (", ".join(referent), m.group('groupName'))
-                    self.rewriteSpec(m.group('groupName'), 'remove', referent)
-            elif k == "resynthesize":
-                # TODO: maybe requires a stay-there for non-F/S?
-                # TODO: maybe this should be a shared actuator handler function instead of a hardcoded keyword?
-                self.doResynthesis()
+ #                   if referent is None:  # This shouldn't happen
+ #                       print "ERROR: Couldn't find region to add/remove"
+ #               
+ #               if m.group('action') == "add_to":
+ #                   print "Added region(s) %s to group %s." % (", ".join(referent), m.group('groupName'))
+ #                   self.rewriteSpec(m.group('groupName'), 'add', referent)
+ #               elif m.group('action') == "remove_from":
+ #                   print "Removed region(s) %s from group %s." % (", ".join(referent), m.group('groupName'))
+ #                   self.rewriteSpec(m.group('groupName'), 'remove', referent)
+           # TOOD: FIX ME
+        if (int(self.prev_outputs[k]) == 0 and int(self.aut.current_outputs[k]) == 1):
+            self.doResynthesis()
 
     def _guiListen(self):
         """
