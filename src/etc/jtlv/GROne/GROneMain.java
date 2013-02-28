@@ -1,21 +1,134 @@
 import net.sf.javabdd.BDD;
-import net.sf.javabdd.BDDVarSet;
-import net.sf.javabdd.BDD.BDDIterator;
 import edu.wis.jtlv.env.Env;
+import edu.wis.jtlv.env.module.ModuleBDDField;
 import edu.wis.jtlv.env.module.SMVModule;
 import edu.wis.jtlv.env.spec.Spec;
 import java.io.File;
 import java.io.PrintStream;
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import edu.wis.jtlv.lib.FixPoint;
-
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.TreeMap;
+ 
+/**
+ * Main class for GR(1) synthesis - reads the input instance and starts the game.
+ * Game solving itself is done in another class.
+ * @author Many people
+ */
 public class GROneMain {
 
-	/**
-	 * @param args
-	 * @throws Exception
-	 */
+    // Read the transition cost list from the cost file.
+    private static TreeMap<Double,BDD> readCostInfo(String inFile) throws Exception {
+      
+      // Prepare reading the cost list
+      TreeMap<Double,BDD> dataRead = new TreeMap<Double,BDD>();
+      dataRead.put(0.0, Env.FALSE().id()); // We use below that this entry is guaranteed to exist.
+      BufferedReader reader = new BufferedReader(new FileReader(inFile));
+      ArrayList<BDD> careSetVariables = new ArrayList<BDD>();
+        
+      // Read the list of BDD variables that we care about
+      String variableList = reader.readLine();
+      if (variableList == null) {
+        throw new Error("Error: Expecting list of BDD variables that we care about when determining the cost of a transition as the first line in the cost file.");
+      }
+      
+      String[] variables = variableList.split(" ");
+      for (String a : variables) {
+         ModuleBDDField field;
+         field = Env.getVar("main.s", a);
+         if (field==null) {
+           field = Env.getVar("main.e", a);
+           if (field==null) {
+             System.err.println("Error while working through the variable list in the cost file. Did not find "+a);
+             System.err.println("Global Unprimed Variables Availble: " + Env.globalUnprimeVars().toString());
+             System.err.println("Global Primed Variable Variable: " + Env.globalPrimeVars().toString());
+             throw new Error("Fatal Error.");
+           }
+         }
+         careSetVariables.add(field.support().toBDD());
+      }
+
+      String costLine = reader.readLine();
+      while (costLine!=null) {
+        
+        // Split into bits
+        String[] costLineParts = costLine.trim().split(" ");
+        if (costLineParts.length > 0) {
+        
+          if (costLineParts.length != careSetVariables.size()+1) {
+            System.err.println("Error in the cost file. The following line simply has the wrong number of elements that are seperated by spaces: ");
+            System.err.println(costLine);
+            System.err.println("Expected are one element of the form '0', '1', or '*' per variable and finally a cost value. Nothing more shall be on a line.");
+            throw new Error("Input file reading failed");
+          }
+          
+          BDD currentBDD = Env.TRUE().id();
+          for (int i=0;i<costLineParts.length-1;i++) {
+            if (costLineParts[i].equals("1")) {
+              currentBDD = currentBDD.and(careSetVariables.get(i));
+            } else if (costLineParts[i].equals("0")) {
+              currentBDD = currentBDD.and(careSetVariables.get(i).not());
+            } else if (costLineParts[i].equals("*")) {
+              // Nothing to be done. Good!
+            } else {
+              System.err.println("Error in the following line of the cost file:");
+              System.err.println(costLine);
+              System.err.println("The element "+costLineParts[i]+" is neither of the form '1','0', or '*' for don't care.");
+              throw new Error("Input file reading failed");
+            }
+          }
+
+          double cost;
+          try {
+            cost = Double.parseDouble(inFile);
+          } catch (NumberFormatException e) {
+            System.err.println("Error in the following line of the cost file:");
+            System.err.println(costLine);
+            System.err.println("The last element in the line is not a valid cost value (which should be a floating point number that is parseable by Java into a 'double').");
+            throw new Error("Input file reading failed");
+          }
+          
+          if (dataRead.containsKey(cost)) {
+            dataRead.put(cost, currentBDD.or(dataRead.get(cost)));
+          } else {
+            dataRead.put(cost, currentBDD.id());
+          }
+        } 
+        
+        costLine = reader.readLine();
+      }
+      
+      if (dataRead.size()==0) {
+        System.err.println("Warning: Didn't find a single cost line. Will assume a transition cost of 0 for all transitions.");
+      }
+      
+      // Sanity check for the cost values. Check that there is no transition that has two different cost
+      // values
+      for (Map.Entry<Double, BDD> entry1 : dataRead.entrySet()) {
+        for (Map.Entry<Double, BDD> entry2 : dataRead.entrySet()) {
+          if (entry1.getKey()>entry2.getKey()) {
+            if (!(entry1.getValue().and(entry2.getValue()).isZero())) {
+              System.err.println("Error in the cost file: There is at least one transition that has cost "+entry1.getKey().toString()+" and "+entry2.getKey().toString()+" at the same time. Sorry, but this is not supported!");
+              throw new Error("Cost file sanity check failed.");
+            }
+          }
+        }
+      }
+          
+      // All transitions without a given cost have cost 0
+      BDD noCost = Env.TRUE().id();
+      for (Map.Entry<Double, BDD> entry1 : dataRead.entrySet()) {
+        noCost = noCost.and(entry1.getValue().not());
+      }
+      dataRead.put(0.0, dataRead.get(0.0).or(noCost));
+        
+      // Done.
+      return dataRead;
+    }
+
+
+
 	public static void main(String[] args) throws Exception {
 		// uncomment to use a C BDD package
 		//System.setProperty("bdd", "buddy");
@@ -51,6 +164,7 @@ public class GROneMain {
 
         // Figure out the name of our output file by stripping the spec filename extension and adding .aut
         String out_filename = args[1].replaceAll("\\.[^\\.]+$",".aut");
+        String cost_filename = args[1].replaceAll("\\.[^\\.]+$",".cost");
 
 		// constructing the environment module.
 		SMVModule env = (SMVModule) Env.getModule("main.e");
@@ -63,6 +177,9 @@ public class GROneMain {
 		Spec[] sys_conjuncts = GROneParser.parseConjuncts(spcs[1]);
 		GROneParser.addReactiveBehavior(sys, sys_conjuncts);
 		//GROneParser.addPureReactiveBehavior(sys, sys_conjuncts);
+
+    // Read the cost information
+    TreeMap<Double,BDD> costData = readCostInfo(cost_filename);
 
 		// env.setFullPrintingMode(true);
 		// System.out.println(env);
