@@ -11,7 +11,7 @@ import edu.wis.jtlv.env.module.Module;
 import edu.wis.jtlv.lib.FixPoint;
 import edu.wis.jtlv.old_lib.games.GameException;
 import edu.wis.jtlv.env.module.ModuleBDDField;
-
+ 
 /** 
  * <p>
  * To execute, create an object with two Modules, one for the system and the
