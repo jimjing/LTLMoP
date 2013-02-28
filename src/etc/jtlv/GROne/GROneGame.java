@@ -11,6 +11,7 @@ import edu.wis.jtlv.env.module.Module;
 import edu.wis.jtlv.lib.FixPoint;
 import edu.wis.jtlv.old_lib.games.GameException;
 import edu.wis.jtlv.env.module.ModuleBDDField;
+import java.util.TreeMap;
  
 /** 
  * <p>
@@ -35,10 +36,11 @@ public class GROneGame {
 
 	BDDVarSet sys_fast_prime;		
 
+  TreeMap<Double,BDD> costData;
 	
 	// p2_winning in GRGAmes are !p1_winning
 
-	public GROneGame(ModuleWithWeakFairness env, ModuleWithWeakFairness sys, int sysJustNum, int envJustNum)
+	public GROneGame(ModuleWithWeakFairness env, ModuleWithWeakFairness sys, int sysJustNum, int envJustNum, TreeMap<Double,BDD> chosenCostData, boolean fastslow)
 	throws GameException {
 		if ((env == null) || (sys == null)) {
 			throw new GameException(
@@ -51,6 +53,7 @@ public class GROneGame {
 		this.sys = sys;
 		this.sysJustNum = sysJustNum;
 		this.envJustNum = envJustNum;
+    this.costData = chosenCostData;
 		
 		// for now I'm giving max_y 50, at the end I'll cut it (and during, I'll
 		// extend if needed. (using vectors only makes things more complicate
@@ -63,49 +66,41 @@ public class GROneGame {
 		z2_mem = new BDD[50];	
 		
 		//
-		this.player2_winning = this.calculate_win();	//(system winning states)
-		this.player1_winning = this.calculate_loss();   //(environment winning states)
+    if (fastslow) {
+      System.err.println("HUGE WARNING: Fastslow semantics are not supported with costs.");
+      this.player2_winning = this.calculate_win_FS();	//(system winning states)
+  		this.player1_winning = this.player2_winning.not(); //(environment winning states)
+    } else {
+      this.player2_winning = this.calculate_win();	//(system winning states)
+		  this.player1_winning = this.calculate_loss();   //(environment winning states
+    }
 		//this.player1_winning = this.player2_winning.not(); //commented out after counterstrategy addition - VR
 
 	}
+  
+  static TreeMap<Double,BDD> getDefaultCostMap() {
+    TreeMap<Double,BDD> defaultCostMap = new TreeMap<Double,BDD>();
+    defaultCostMap.put(0.0, Env.FALSE().id()); // We use below that this entry is guaranteed to exist.
+    return defaultCostMap;
+  }
 	
-	
-	
-	public GROneGame(ModuleWithWeakFairness env, ModuleWithWeakFairness sys)
+  public GROneGame(ModuleWithWeakFairness env, ModuleWithWeakFairness sys, boolean fastslow)
 			throws GameException {
-		this(env, sys, sys.justiceNum(), env.justiceNum());
+		this(env, sys, sys.justiceNum(), env.justiceNum(), getDefaultCostMap(), fastslow);
 	}
+  
+  public GROneGame(ModuleWithWeakFairness env, ModuleWithWeakFairness sys, int sysJustNum, int envJustNum, boolean fastslow)
+	throws GameException {
+     this(env, sys, sysJustNum, envJustNum, getDefaultCostMap(), fastslow);
+  }
 	
-	public GROneGame(ModuleWithWeakFairness env, ModuleWithWeakFairness sys, boolean fastslow)
+	
+	
+	
+	public GROneGame(ModuleWithWeakFairness env, ModuleWithWeakFairness sys, TreeMap<Double,BDD> costData, boolean fastslow)
 			throws GameException {
-		if ((env == null) || (sys == null)) {
-			throw new GameException(
-					"cannot instanciate a GR[1] Game with an empty player.");
-		}
-		
-		//Define system and environment modules, and how many liveness conditions are to be considered. 
-		//The first sysJustNum system livenesses and the first envJustNum environment livenesses will be used
-		this.env = env;
-		this.sys = sys;
-		this.sysJustNum = sys.justiceNum();
-		this.envJustNum = env.justiceNum();
-		
-		// for now I'm giving max_y 50, at the end I'll cut it (and during, I'll
-		// extend if needed. (using vectors only makes things more complicate
-		// since we cannot instantiate vectors with new vectors)
-		x_mem = new BDD[sysJustNum][envJustNum][50];
-		y_mem = new BDD[sysJustNum][50];
-		z_mem = new BDD[sysJustNum];
-		x2_mem = new BDD[sysJustNum][envJustNum][50][50];
-		y2_mem = new BDD[sysJustNum][50];
-		z2_mem = new BDD[50];	
-			
-		
-		this.player2_winning = this.calculate_win_FS();	//(system winning states)
-		this.player1_winning = this.player2_winning.not(); //(environment winning states)
-
+		this(env, sys, sys.justiceNum(), env.justiceNum(), costData, fastslow);
 	}
-	
 	
 
 

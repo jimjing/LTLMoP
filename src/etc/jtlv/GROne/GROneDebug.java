@@ -112,7 +112,7 @@ public class GROneDebug {
 		 //create a GR(1) game using the specified modules for the rest of the checks
 		 GROneGame g = null;		 
 		 try { 
-			  	g = new GROneGame(env,sys, sys.justiceNum(), env.justiceNum());		
+			  	g = new GROneGame(env,sys, sys.justiceNum(), env.justiceNum(),false);		
 		  }	catch (Exception e){//Catch exception if any
 					System.err.println("Error: " + e.getMessage());
 		  }
@@ -176,7 +176,7 @@ public class GROneDebug {
 		
 		String debugInfo = "";
 		BDD prev;
-		g = new GROneGame(env,sys, sys.justiceNum(), env.justiceNum());
+		g = new GROneGame(env,sys, sys.justiceNum(), env.justiceNum(),false);
 			
 		counter_exmple = g.envWinningStates().and(all_init);		 
 		if (counter_exmple.isZero()) {	//no winning environment states		
@@ -197,7 +197,7 @@ public class GROneDebug {
 					 explainEnv = 1;
 				}
 				 prev = counter_exmple;
-				 g = new GROneGame(env,sys, sys.justiceNum(), i);
+				 g = new GROneGame(env,sys, sys.justiceNum(), i,false);
 				 counter_exmple = g.envWinningStates().and(all_init);
 				 if (explainEnv ==0 && counter_exmple.isZero()) {
 					 if (g.calculate_strategy(3, all_init.and(g.sysWinningStates()), false)) { 
@@ -240,7 +240,7 @@ public class GROneDebug {
 				 	 explainSys = 1;
 				 }
 			 
-				 g = new GROneGame(env,sys, i, 1);
+				 g = new GROneGame(env,sys, i, 1,false);
 				 counter_exmple = g.envWinningStates().and(all_init);
 				 if (explainSys ==0 && !counter_exmple.isZero()) {
 					//checking for multi-step unsatisfiability between sys transitions and goals

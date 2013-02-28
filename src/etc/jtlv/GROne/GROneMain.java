@@ -53,8 +53,9 @@ public class GROneMain {
       while (costLine!=null) {
         
         // Split into bits
-        String[] costLineParts = costLine.trim().split(" ");
-        if (costLineParts.length > 0) {
+        if (costLine.length() > 0) { // Ignore empty lines
+          String[] costLineParts = costLine.trim().split(" ");
+        
         
           if (costLineParts.length != careSetVariables.size()+1) {
             System.err.println("Error in the cost file. The following line simply has the wrong number of elements that are seperated by spaces: ");
@@ -81,7 +82,7 @@ public class GROneMain {
 
           double cost;
           try {
-            cost = Double.parseDouble(inFile);
+            cost = Double.parseDouble(costLineParts[costLineParts.length-1]);
           } catch (NumberFormatException e) {
             System.err.println("Error in the following line of the cost file:");
             System.err.println(costLine);
@@ -196,7 +197,7 @@ public class GROneMain {
 		
 		//If the option is enabled, first try fastslow	
 		if (fs) {
-			g = new GROneGame(env,sys,true);
+			g = new GROneGame(env,sys,costData,true);
 			long t1 = (System.currentTimeMillis() - time);
 			System.out.println("Games time: " + t1);
 			
@@ -227,7 +228,7 @@ public class GROneMain {
 		}
 		
 
-		g = new GROneGame(env,sys);
+		g = new GROneGame(env,sys,costData,false);
 		long t3 = (System.currentTimeMillis() - time);
 		System.out.println("Games time: " + t3);
 
