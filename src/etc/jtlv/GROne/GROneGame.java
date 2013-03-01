@@ -132,19 +132,14 @@ public class GROneGame {
               systemTransitionsThatDoNotExceedCostLimit = systemTransitionsThatDoNotExceedCostLimit.or(costData.get(additionalTransitionCost));
 
               System.out.println("Processing cost-based-synthesis at level "+Integer.toString(level)+" and transition cost "+Double.toString(currentTransitionCost)+"+"+Double.toString(additionalTransitionCost));
+              // System.out.
               
               // Compute fixed point over cost-free transitions
               // Start with the no-waiting case
-              y = paretoStorage.getBDD(level, currentTransitionCost);
+              y = Env.FALSE().id();
               boolean firstRound = true;
               for (iterY = new FixPoint<BDD>(); iterY.advance(y);) {
-                if (firstRound) {
-                  y = y.or(yieldStatesWithRestrictedTransitions(y, systemTransitionsThatDoNotExceedCostLimit));
-                  firstRound = false;
-                } else {
-                  y = y.or(yieldStatesWithRestrictedTransitions(y, costFreeTransitions));
-                }
-
+                
                 // Add prefix point
                 y_mem[j][cy] = y.id();
                 for (int i = 0; i < envJustNum; i++) {
@@ -155,12 +150,26 @@ public class GROneGame {
                   x_mem = extend_size(x_mem, cy);
                   y_mem = extend_size(y_mem, cy);
                 }
+                
+                if (firstRound) {
+                  y = y.or(yieldStatesWithRestrictedTransitions(y.or(paretoStorage.getBDD(level, currentTransitionCost)), systemTransitionsThatDoNotExceedCostLimit));
+                  firstRound = false;
+                } else {
+                  y = y.or(yieldStatesWithRestrictedTransitions(y.or(paretoStorage.getBDD(level, currentTransitionCost)), costFreeTransitions));
+                }
+
               }
 
               // Add new possibilities (without waiting for the environment)
-              paretoStorage.add(level, currentTransitionCost + additionalTransitionCost, y);
-
+              //paretoStorage.add(level, currentTransitionCost + additionalTransitionCost, y);
+/*
               for (iterY = new FixPoint<BDD>(); iterY.advance(y);) {
+                y_mem[j][cy] = y.id();
+                //System.out.println("Y ["+ j + "] = " + y_mem[j][cy]);													
+                if (cy % 50 == 0) {
+                  x_mem = extend_size(x_mem, cy);
+                  y_mem = extend_size(y_mem, cy);
+                }
                 for (int i = 0; i < envJustNum; i++) {
                   BDD negp = env.justiceAt(i).not();
                   x = z.id();
@@ -170,22 +179,17 @@ public class GROneGame {
                   x_mem[j][i][cy] = x.id();
                   //System.out.println("X ["+ j + ", " + i + ", " + cy + "] = " + x_mem[j][i][cy]);							
                   y = y.id().or(x);
+                  cy++;
                 }
-                y_mem[j][cy] = y.id();
-                //System.out.println("Y ["+ j + "] = " + y_mem[j][cy]);													
-                cy++;
-                if (cy % 50 == 0) {
-                  x_mem = extend_size(x_mem, cy);
-                  y_mem = extend_size(y_mem, cy);
-                }
-              }
+
+              }*/
 
               // Add new possibilities (with waiting for the environment)
-              paretoStorage.add(level + 1, currentTransitionCost + additionalTransitionCost, y);
+              //paretoStorage.add(level + 1, currentTransitionCost + additionalTransitionCost, y);
             }
           }
         }
-
+         
 
         // Cost-free synthesis - Fall-back for cases in which infinite cost is unavoidable.
         y = Env.FALSE();
