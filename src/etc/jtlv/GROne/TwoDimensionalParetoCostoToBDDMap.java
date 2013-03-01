@@ -67,6 +67,30 @@ class TwoDimensionalParetoCostoToBDDMap {
     }
   }
   
+  BDD getBDD(int waitingCost, double transitionCost) {
+    if (storage.size()<=waitingCost) throw new RuntimeException("Illegal discrete cost.");
+    TreeMap< Double, BDD > weightMap = storage.get(waitingCost);
+    if (!(weightMap.containsKey(transitionCost))) throw new RuntimeException("Illegal continuous cost.");
+    return weightMap.get(transitionCost);
+  }
+  
+  int getMaxDiscreteCost() {
+    return storage.size()-1;
+  }
+  
+  /**
+   * 
+   * @param waitingCost
+   * @param previousTransitionCost
+   * @return Null if no more key element at this discrete cost level exists
+   */
+  Double getNextTransitionCostAtDiscreteLevel(int waitingCost, double previousTransitionCost) {
+    if (storage.size()<=waitingCost) throw new RuntimeException("Illegal discrete cost.");
+    TreeMap< Double, BDD > weightMap = storage.get(waitingCost);
+    return weightMap.higherKey(previousTransitionCost);
+  }
+  
+  
   /**
    * Just the constructor. Nothing special.
    */
