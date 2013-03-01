@@ -60,7 +60,9 @@ class TwoDimensionalParetoCostoToBDDMap {
             }
           }
         }
-        storage.removeAll(listOfNowSuperfluousElements);
+        for (Double a : listOfNowSuperfluousElements) {
+          storage.get(i).remove(a);
+        }
       }
     
       

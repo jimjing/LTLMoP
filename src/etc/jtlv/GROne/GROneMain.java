@@ -90,6 +90,13 @@ public class GROneMain {
             throw new Error("Input file reading failed");
           }
           
+          if (cost < 0.0) {
+            System.err.println("Error in the following line of the cost file:");
+            System.err.println(costLine);
+            System.err.println("The cost must not be negative.");
+            throw new Error("Input file reading failed");
+          }
+          
           if (dataRead.containsKey(cost)) {
             dataRead.put(cost, currentBDD.or(dataRead.get(cost)));
           } else {

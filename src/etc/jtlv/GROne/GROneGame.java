@@ -120,7 +120,6 @@ public class GROneGame {
       for (int j = 0; j < sysJustNum; j++) {
         cy = 0;
 
-
         // Synthesize with cost. 
         TwoDimensionalParetoCostoToBDDMap paretoStorage = new TwoDimensionalParetoCostoToBDDMap();
         paretoStorage.add(0, 0.0, sys.justiceAt(j).and(env.yieldStates(sys, z)));
@@ -147,9 +146,7 @@ public class GROneGame {
                 // Add prefix point
                 y_mem[j][cy] = y.id();
                 for (int i = 0; i < envJustNum; i++) {
-
                   x_mem[j][i][cy] = y.id();
-
                 }
                 cy++;
                 if (cy % 50 == 0) {
@@ -157,23 +154,16 @@ public class GROneGame {
                   y_mem = extend_size(y_mem, cy);
                 }
               }
-              
+
               // Add new possibilities (without waiting for the environment)
-              paretoStorage.add(level, currentTransitionCost+additionalTransitionCost, y);
+              paretoStorage.add(level, currentTransitionCost + additionalTransitionCost, y);
 
-              // Allow usage of X, but this time add a level cost of 1 and allow waiting for environment
-              throw new RuntimeException("Continue programming here!");
-              
-
-              y = Env.FALSE();
               for (iterY = new FixPoint<BDD>(); iterY.advance(y);) {
-                BDD start = sys.justiceAt(j).and(env.yieldStates(sys, z)).or(env.yieldStates(sys, y));
-                y = Env.FALSE();
                 for (int i = 0; i < envJustNum; i++) {
                   BDD negp = env.justiceAt(i).not();
                   x = z.id();
                   for (iterX = new FixPoint<BDD>(); iterX.advance(x);) {
-                    x = negp.and(env.yieldStates(sys, x)).or(start);
+                    x = negp.and(yieldStatesWithRestrictedTransitions(x, costFreeTransitions)).or(y);
                   }
                   x_mem[j][i][cy] = x.id();
                   //System.out.println("X ["+ j + ", " + i + ", " + cy + "] = " + x_mem[j][i][cy]);							
@@ -188,24 +178,33 @@ public class GROneGame {
                 }
               }
 
-
-
+              // Add new possibilities (with waiting for the environment)
+              paretoStorage.add(level + 1, currentTransitionCost + additionalTransitionCost, y);
             }
-
-
-
           }
-
-
         }
-
-
 
 
         // Cost-free synthesis - Fall-back for cases in which infinite cost is unavoidable.
         y = Env.FALSE();
         for (iterY = new FixPoint<BDD>(); iterY.advance(y);) {
-          BDD start = sys.justiceAt(j).and(env.yieldStates(sys, z)).or(env.yieldStates(sys, y));
+
+          /** Change, 20th of Februrary 2013 by Ruediger - Prefer progress for which we do not need to wait for liveness assumption progress **/
+          BDD y2 = sys.justiceAt(j).and(env.yieldStates(sys, z)).or(y);
+          for (FixPoint<BDD> iterY2 = new FixPoint<BDD>(); iterY2.advance(y2);) {
+            y_mem[j][cy] = y2.id();
+            for (int i = 0; i < envJustNum; i++) {
+              x_mem[j][i][cy] = y2.id();
+            }
+            cy++;
+            if (cy % 50 == 0) {
+              x_mem = extend_size(x_mem, cy);
+              y_mem = extend_size(y_mem, cy);
+            }
+            y2 = y2.or(env.yieldStates(sys, y2));
+          }
+          BDD start = y2.id();
+          /** End Of Change **/
           y = Env.FALSE();
           for (int i = 0; i < envJustNum; i++) {
             BDD negp = env.justiceAt(i).not();
