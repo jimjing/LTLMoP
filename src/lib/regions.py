@@ -17,7 +17,7 @@
 
 import os, sys, copy
 import fileMethods
-import re, random, math
+import re, random, math,numpy
 import Polygon, Polygon.Utils, os
 import json
 from numbers import Number
@@ -267,6 +267,8 @@ class RegionFileInterface(object):
 
         # Create empty adjacency matrix
         self.transitions = [[[] for j in range(len(self.regions))] for i in range(len(self.regions))]
+        # Calculate transition cost
+        self.transitionCost = [[[] for j in range(len(self.regions))] for i in range(len(self.regions))]
 
         transitionFaces = {} # This is just a list of faces to draw dotted lines on
 
@@ -294,6 +296,8 @@ class RegionFileInterface(object):
                         if other_obj == obj: continue
                         key2 = self.regions.index(other_obj)
                         self.transitions[key][key2].append(face)
+                        if self.transitionCost[key][key2] is not []:
+                            self.transitionCost[key][key2] = self.calcTransitionCost(obj,other_obj)
             else:
                 # Otherwise mark for deletion (we can't delete it in the middle of iteration)
                 toDelete.append(face)
@@ -303,6 +307,18 @@ class RegionFileInterface(object):
             del transitionFaces[unused_face]                    
 
         return transitionFaces
+
+    def calcTransitionCost(self,region1,region2):
+        """
+        Calculates the cost(weight) of the transition based on the geometric relations between region1 and region2.
+        The cost of the transition is the Euclidean distance between the centroid of region1 and region2.
+        """
+
+        poly1 = Polygon.Polygon([x for x in region1.getPoints()])
+        poly2 = Polygon.Polygon([x for x in region2.getPoints()])
+        (c1_x,c1_y) = poly1.center()
+        (c2_x,c2_y) = poly2.center()
+        return math.sqrt((c1_x-c2_x)**2+(c1_y-c2_y)**2)
 
     def getBoundingBox(self):
         if self.regions == []:
@@ -383,8 +399,63 @@ class RegionFileInterface(object):
 
         fileMethods.writeToFile(filename, data, comments)
         self.filename = filename
+        
+        # write the cost file
+        self.writeCostFile(os.path.splitext(filename)[0]+'.cost')
 
         return True
+    
+    def writeCostFile(self,filename):
+        """
+        A function that write the cost of transition into a .cost file
+        File format is described inside the comments variable. 
+        """
+
+        comments = {"FILE_HEADER":"This is a file for cost of transition between regions.\n" +
+                                  "Format details are described at the beginning of each section below.\n" +
+                                  "Note that all values are separated by *tabs*.\n"+
+                                  "The cost of the transition is the Euclidean distance between the centroid of region1 and region2.\n"}
+
+                    #"TransitionsCost": "bit0 bit1 bit2... bit0\' bit1\' bit2\'... Region name, Region\' Name"}
+        # Define the number of bits needed to encode the regions
+        numBits = int(numpy.ceil(numpy.log2(len(self.regions))))
+        regionData = []
+        # put the data format in a string
+        dataFormat = ['bit'+str(i) for i in range(numBits)]
+        dataFormat.extend(['bit'+str(i)+'\'' for i in range(numBits)])
+        dataFormat = "\t".join(dataFormat)+'\tcost\tregion1Name\tregion2Name'
+        # the first line of data will be the format 
+        transitionCostData = [dataFormat]
+        for region1, destinations in enumerate(self.transitionCost):
+            for region2, cost in enumerate(destinations[region1+1:]):
+                if cost == []: continue # no transition between the two regions
+                
+                region2Index = region1 + 1 + region2
+                # transition from region1 to region2
+                transitionCostData.append("\t".join([self.bitEncoding(region1,numBits),self.bitEncoding(region2Index,numBits),
+                                            str(self.transitionCost[region1][region2Index]),
+                                            self.regions[region1].name,self.regions[region2Index].name]))
+                # transition from region2 to region1
+                transitionCostData.append("\t".join([self.bitEncoding(region2Index,numBits),self.bitEncoding(region1,numBits), 
+                                            str(self.transitionCost[region1][region2Index]),
+                                            self.regions[region2Index].name,self.regions[region1].name]))
+        data = {"TransitionsCost": transitionCostData}
+
+        fileMethods.writeToFile(filename, data, comments)
+
+        return True
+
+
+    def bitEncoding(self,regionIndex,numBits):
+        ''' This function returns the binary representation of the given region index in string. all bits are seperated with tab
+        '''
+        bitEnc = ''
+        binary = numpy.binary_repr(regionIndex)
+        # Adding zeros
+        bitString = '0'*(numBits-len(binary)) + binary
+        bitEnc = ('\t'.join(bitString))
+
+        return bitEnc
 
     def readFile(self, filename):
         """
