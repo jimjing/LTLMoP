@@ -131,6 +131,8 @@ public class GROneGame {
             for (Double additionalTransitionCost : costData.keySet()) {
               systemTransitionsThatDoNotExceedCostLimit = systemTransitionsThatDoNotExceedCostLimit.or(costData.get(additionalTransitionCost));
 
+              System.out.println("Processing cost-based-synthesis at level "+Integer.toString(level)+" and transition cost "+Double.toString(currentTransitionCost)+"+"+Double.toString(additionalTransitionCost));
+              
               // Compute fixed point over cost-free transitions
               // Start with the no-waiting case
               y = paretoStorage.getBDD(level, currentTransitionCost);

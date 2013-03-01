@@ -28,12 +28,17 @@ public class GROneMain {
       ArrayList<BDD> careSetVariables = new ArrayList<BDD>();
         
       // Read the list of BDD variables that we care about
-      String variableList = reader.readLine();
-      if (variableList == null) {
-        throw new Error("Error: Expecting list of BDD variables that we care about when determining the cost of a transition as the first line in the cost file.");
-      }
-      
-      String[] variables = variableList.split(" ");
+      String variableList = null;
+      do {
+        variableList = reader.readLine();
+        if (variableList == null) {
+          throw new Error("Error: Expecting list of BDD variables that we care about when determining the cost of a transition as the first line in the cost file.");
+        } else {
+          variableList = variableList.trim();
+        }
+      } while ((variableList.length()==0) || (variableList.substring(0,1).equals("#")));
+          
+      String[] variables = variableList.split("\\s");
       for (String a : variables) {
          ModuleBDDField field;
          field = Env.getVar("main.s", a);
@@ -53,19 +58,19 @@ public class GROneMain {
       while (costLine!=null) {
         
         // Split into bits
-        if (costLine.length() > 0) { // Ignore empty lines
-          String[] costLineParts = costLine.trim().split(" ");
+        if ((costLine.length() > 0) && (!(variableList.substring(0,1).equals("#")))) { // Ignore empty lines
+          String[] costLineParts = costLine.trim().split("\\s");
         
         
-          if (costLineParts.length != careSetVariables.size()+1) {
+          if (costLineParts.length <= careSetVariables.size()) {
             System.err.println("Error in the cost file. The following line simply has the wrong number of elements that are seperated by spaces: ");
             System.err.println(costLine);
-            System.err.println("Expected are one element of the form '0', '1', or '*' per variable and finally a cost value. Nothing more shall be on a line.");
+            System.err.println("Expected are one element of the form '0', '1', or '*' per variable and finally a cost value. Everythin else that is on a line is ignored.");
             throw new Error("Input file reading failed");
           }
           
           BDD currentBDD = Env.TRUE().id();
-          for (int i=0;i<costLineParts.length-1;i++) {
+          for (int i=0;i<careSetVariables.size();i++) {
             if (costLineParts[i].equals("1")) {
               currentBDD = currentBDD.and(careSetVariables.get(i));
             } else if (costLineParts[i].equals("0")) {
@@ -82,7 +87,7 @@ public class GROneMain {
 
           double cost;
           try {
-            cost = Double.parseDouble(costLineParts[costLineParts.length-1]);
+            cost = Double.parseDouble(costLineParts[careSetVariables.size()]);
           } catch (NumberFormatException e) {
             System.err.println("Error in the following line of the cost file:");
             System.err.println(costLine);
@@ -207,6 +212,7 @@ public class GROneMain {
 			g = new GROneGame(env,sys,costData,true);
 			long t1 = (System.currentTimeMillis() - time);
 			System.out.println("Games time: " + t1);
+      System.out.flush();
 			
 			//Check that every initial system state is winning for every initial environment state
 			 all_init = g.getSysPlayer().initial().and(g.getEnvPlayer().initial());
@@ -238,6 +244,7 @@ public class GROneMain {
 		g = new GROneGame(env,sys,costData,false);
 		long t3 = (System.currentTimeMillis() - time);
 		System.out.println("Games time: " + t3);
+    System.out.flush();
 
 		// ** Export safety automaton for counterstrategy visualization
 

@@ -28,10 +28,10 @@ class TwoDimensionalParetoCostoToBDDMap {
    */
   public void add(int waitingCost, double transitionCost, BDD unprimedStates) {
     BDD oldStates = Env.FALSE().id();
-    for (int i=0;(i<storage.size() && (i<=waitingCost)) ;i++) {
+    for (int i=0;(i<storage.size() && (i<=waitingCost));i++) {
       for (Map.Entry<Double, BDD> a : storage.get(i).entrySet()) {
-        if (a.getKey()<=waitingCost) {
-          oldStates = oldStates.and(a.getValue());
+        if (a.getKey()<=transitionCost) {
+          oldStates = oldStates.or(a.getValue());
         }
       }
     }
