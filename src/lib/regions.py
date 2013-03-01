@@ -304,6 +304,18 @@ class RegionFileInterface(object):
 
         return transitionFaces
 
+    def calcTransitionCost(self,region1,region2):
+        """
+        Calculates the cost(weight) of the transition based on the geometric relations between region1 and region2.
+        The cost of the transition is the Euclidean distance between the centroid of region1 and region2.
+        """
+
+        poly1 = Polygon.Polygon([x for x in region1.getPoints()])
+        poly2 = Polygon.Polygon([x for x in region2.getPoints()])
+        (c1_x,c1_y) = poly1.center()
+        (c2_x,c2_y) = poly2.center()
+        return math.sqrt((c1_x-c2_x)**2+(c1_y-c2_y)**2)
+
     def getBoundingBox(self):
         if self.regions == []:
             return None
