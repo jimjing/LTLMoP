@@ -67,7 +67,7 @@ public class GROneGame {
 		
 		//
     if (fastslow) {
-      System.err.println("HUGE WARNING: Fastslow semantics are not supported with costs.");
+      System.err.println("HUGE WARNING: Fastslow semantics are not supported with costs. Costs are simply IGNORED!");
       this.player2_winning = this.calculate_win_FS();	//(system winning states)
   		this.player1_winning = this.player2_winning.not(); //(environment winning states)
     } else {
@@ -125,6 +125,16 @@ public class GROneGame {
 		for (iterZ = new FixPoint<BDD>(); iterZ.advance(z);) {
 			//for (int j = 0; j < sys.justiceNum(); j++) {
 			for (int j = 0; j < sysJustNum; j++) {
+        
+        // Synthesis with COST
+        TwoDimensionalParetoCostoToBDDMap paretoStorage = new TwoDimensionalParetoCostoToBDDMap();
+        paretoStorage.add(0,0.0,sys.justiceAt(j));
+        
+        
+        
+        
+        
+        // Cost-free synthesis - Fall-back for cases in which infinite cost is unavoidable.
 				cy = 0;
 				y = Env.FALSE();
 				for (iterY = new FixPoint<BDD>(); iterY.advance(y);) {
