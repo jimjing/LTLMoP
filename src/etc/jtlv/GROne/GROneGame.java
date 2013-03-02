@@ -204,7 +204,7 @@ public class GROneGame {
       // Add the transitions found to the list of preferred transitions
       for (ArrayList<BDD> a : transitionStorage.values()) {
         for (BDD b : a) {
-          strategy.get(j).add(b);
+          //strategy.get(j).add(b);
         }
       }
       
@@ -212,6 +212,14 @@ public class GROneGame {
       // Backup - Classical approach
       BDD y = sys.justiceAt(j).and(z);
       for (iterY = new FixPoint<BDD>(); iterY.advance(y);) {
+
+        // Prefer non-waiting solutions
+        for (FixPoint<BDD> iterY2 = new FixPoint<BDD>(); iterY2.advance(y);) {
+          y = env.yieldStates(sys, y).or(y);
+          BDD goodTransitions = Env.prime(y).and(sys.trans());
+          strategy.get(j).add(goodTransitions);
+        }
+        
         for (int i = 0; i < envJustNum; i++) {
           BDD negp = env.justiceAt(i).not();
           BDD x = z.id();
