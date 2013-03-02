@@ -1,4 +1,62 @@
-bit0 bit1 bit2 bit0' bit1' bit2'
-0 1 0 0 1 1 23.44150
+# This is a file for cost of transition between regions.
+# Format details are described at the beginning of each section below.
+# Note that all values are separated by *tabs*.
+# The cost of the transition is the Euclidean distance between the centroid of region1 and region2.
 
+TransitionsCost:
+bit0	bit1	bit2	bit3	bit0'	bit1'	bit2'	bit3'	cost	region1Name	region2Name
+0	0	0	0	0	0	0	1	115.5	r10	r3
+0	0	0	1	0	0	0	0	115.5	r3	r10
+0	0	0	0	0	0	1	0	172.984635098	r10	rNoWay
+0	0	1	0	0	0	0	0	172.984635098	rNoWay	r10
+0	0	0	0	0	0	1	1	181.573817732	r10	boundary
+0	0	1	1	0	0	0	0	181.573817732	boundary	r10
+0	0	0	0	1	0	1	0	106.922869397	r10	r1
+1	0	1	0	0	0	0	0	106.922869397	r1	r10
+0	0	0	1	0	0	1	0	176.167665389	r3	rNoWay
+0	0	1	0	0	0	0	1	176.167665389	rNoWay	r3
+0	0	0	1	0	0	1	1	183.422214588	r3	boundary
+0	0	1	1	0	0	0	1	183.422214588	boundary	r3
+0	0	0	1	0	1	0	0	98.0	r3	r2
+0	1	0	0	0	0	0	1	98.0	r2	r3
+0	0	1	0	0	1	0	0	230.002218343	rNoWay	r2
+0	1	0	0	0	0	1	0	230.002218343	r2	rNoWay
+0	0	1	0	0	1	0	1	158.949270187	rNoWay	r8
+0	1	0	1	0	0	1	0	158.949270187	r8	rNoWay
+0	0	1	0	0	1	1	0	235.332373177	rNoWay	r7
+0	1	1	0	0	0	1	0	235.332373177	r7	rNoWay
+0	0	1	0	0	1	1	1	171.825919096	rNoWay	r6
+0	1	1	1	0	0	1	0	171.825919096	r6	rNoWay
+0	0	1	0	1	0	0	0	234.374401098	rNoWay	r5
+1	0	0	0	0	0	1	0	234.374401098	r5	rNoWay
+0	0	1	0	1	0	0	1	161.318100739	rNoWay	r4
+1	0	0	1	0	0	1	0	161.318100739	r4	rNoWay
+0	0	1	0	1	0	1	0	222.493046861	rNoWay	r1
+1	0	1	0	0	0	1	0	222.493046861	r1	rNoWay
+0	0	1	1	0	1	0	0	234.817259771	boundary	r2
+0	1	0	0	0	0	1	1	234.817259771	r2	boundary
+0	0	1	1	0	1	0	1	160.964673335	boundary	r8
+0	1	0	1	0	0	1	1	160.964673335	r8	boundary
+0	0	1	1	0	1	1	0	230.972965496	boundary	r7
+0	1	1	0	0	0	1	1	230.972965496	r7	boundary
+0	0	1	1	0	1	1	1	163.447241036	boundary	r6
+0	1	1	1	0	0	1	1	163.447241036	r6	boundary
+0	0	1	1	1	0	0	0	227.033464471	boundary	r5
+1	0	0	0	0	0	1	1	227.033464471	r5	boundary
+0	0	1	1	1	0	0	1	159.702321615	boundary	r4
+1	0	0	1	0	0	1	1	159.702321615	r4	boundary
+0	0	1	1	1	0	1	0	229.763703866	boundary	r1
+1	0	1	0	0	0	1	1	229.763703866	r1	boundary
+0	1	0	0	1	0	0	1	163.683083271	r2	r4
+1	0	0	1	0	1	0	0	163.683083271	r4	r2
+0	1	0	1	0	1	1	0	161.840971327	r8	r7
+0	1	1	0	0	1	0	1	161.840971327	r7	r8
+0	1	0	1	1	0	1	0	157.000796176	r8	r1
+1	0	1	0	0	1	0	1	157.000796176	r1	r8
+0	1	1	0	0	1	1	1	167.715532972	r7	r6
+0	1	1	1	0	1	1	0	167.715532972	r6	r7
+0	1	1	1	1	0	0	0	164.019053771	r6	r5
+1	0	0	0	0	1	1	1	164.019053771	r5	r6
+1	0	0	0	1	0	0	1	170.320287091	r5	r4
+1	0	0	1	1	0	0	0	170.320287091	r4	r5
 

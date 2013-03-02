@@ -45,6 +45,8 @@ go to r7
 
 
 # always not BlockedA or not BlockedB
-# do BlockedA unless you sensed not BlockedA
-# always not r6 or not BlockedB
+infinitely often not BlockedB
+do BlockedA unless you sensed not BlockedA
+# if BlockedA then do not r3
+if BlockedB then do not r6
 
