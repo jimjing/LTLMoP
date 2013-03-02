@@ -204,7 +204,7 @@ public class GROneGame {
       // Add the transitions found to the list of preferred transitions
       for (ArrayList<BDD> a : transitionStorage.values()) {
         for (BDD b : a) {
-          //strategy.get(j).add(b);
+          strategy.get(j).add(b);
         }
       }
       
