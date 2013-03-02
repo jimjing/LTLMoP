@@ -36,10 +36,11 @@ public class GROneMain {
         } else {
           variableList = variableList.trim();
         }
-      } while ((variableList.length()==0) || (variableList.substring(0,1).equals("#")));
+      } while ((variableList.length()==0) || (variableList.substring(0,1).equals("#")) || (variableList.equals("TransitionsCost:")));
           
       String[] variables = variableList.split("\\s");
-      for (String a : variables) {
+      for (int i = 0;i<variables.length-3;i++) { // Ignore the last three entries as they should be "cost	region1Name	region2Name"
+        String a = variables[i];
          ModuleBDDField field;
          field = Env.getVar("main.s", a);
          if (field==null) {
@@ -52,6 +53,19 @@ public class GROneMain {
            }
          }
          careSetVariables.add(field.support().toBDD());
+      }
+      
+      if (variables.length<3) {
+        throw new Error("Variable list in cost file is too short.");
+      }
+      if (!(variables[variables.length-1].equals("region2Name"))) {
+        throw new Error("Expected 'region2Name' as header after variable list");
+      }
+      if (!(variables[variables.length-2].equals("region1Name"))) {
+        throw new Error("Expected 'region1Name' as header after variable list");
+      }
+      if (!(variables[variables.length-3].equals("cost"))) {
+        throw new Error("Expected 'cost' as header after variable list");
       }
 
       String costLine = reader.readLine();
@@ -177,7 +191,7 @@ public class GROneMain {
 
         // Figure out the name of our output file by stripping the spec filename extension and adding .aut
         String out_filename = args[1].replaceAll("\\.[^\\.]+$",".aut");
-        String cost_filename = args[1].replaceAll("\\.[^\\.]+$",".cost");
+        String cost_filename = args[1].replaceAll("\\.[^\\.]+$","_decomposed.cost");
 
 		// constructing the environment module.
 		SMVModule env = (SMVModule) Env.getModule("main.e");
@@ -260,9 +274,8 @@ public class GROneMain {
 		}
 
 		// ** Analysis calls
-
-		String debugFile = args[1].replaceAll("\\.[^\\.]+$",".debug");
-		GROneDebug.analyze(env,sys);
+		// String debugFile = args[1].replaceAll("\\.[^\\.]+$",".debug");
+		// GROneDebug.analyze(env,sys);
 
 		///////////////////////////////////////////////
 		//Check that every initial system state is winning for every initial environment state
@@ -295,12 +308,6 @@ public class GROneMain {
 				}*/
 
 
-			System.out.println("==== Computing counterstrategy =========");
-			System.out.println("-----------------------------------------");
-			PrintStream orig_out = System.out;
-			System.setOut(new PrintStream(new File(out_filename))); // writing the output to a file
-			g.printLosingStrategy(counter_exmple);
-			System.setOut(orig_out); // restore STDOUT
 			System.out.print("-----------------------------------------\n");
 			long t2 = (System.currentTimeMillis() - time);
 			System.out.println("Strategy time: " + t2);
@@ -308,6 +315,7 @@ public class GROneMain {
 
 
 			//Error code = 1 on exit
+      System.out.flush();
 			System.exit(1);
 		}
 
