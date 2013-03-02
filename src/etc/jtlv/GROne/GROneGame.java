@@ -123,6 +123,9 @@ public class GROneGame {
     
     // Now compute a strategy
     BDD costFreeTransitions = costData.get(0.0);
+    //System.out.println("These are the cost-tree transitions: ");
+    //costFreeTransitions.and(sys.trans()).printSet();
+    
     strategy = new ArrayList< ArrayList< BDD>>(sysJustNum);
     for (int j = 0; j < sysJustNum; j++) {
       strategy.add(new ArrayList< BDD>());
@@ -156,9 +159,6 @@ public class GROneGame {
             
             // Compute costly transition
             BDD y = paretoStorage.getBDD(level, currentTransitionCost);
-            System.out.println("Printing variable y that is "+(y.isZero()?"FALSE":"not false"));
-            y.printSet();
-            
             BDD costlyTransition = Env.prime(y).and(systemTransitionsThatDoNotExceedCostLimit).and(sys.trans());
             transitionStorage.get(new CostPairOrderedByPreference(level,additionalTransitionCost+currentTransitionCost)).add(costlyTransition);
             
@@ -174,32 +174,29 @@ public class GROneGame {
 
             // Add new possibilities (without waiting for the environment)
             paretoStorage.add(level, currentTransitionCost + additionalTransitionCost, y);
+
             
+            // What about waiting for environment?
+            y = paretoStorage.getBDD(level, currentTransitionCost);
+            costlyTransition = Env.prime(y).and(systemTransitionsThatDoNotExceedCostLimit).and(sys.trans());
             
-/*
+            // Do the rest of the iteration
             for (iterY = new FixPoint<BDD>(); iterY.advance(y);) {
-              y_mem[j][cy] = y.id();
-              //System.out.println("Y ["+ j + "] = " + y_mem[j][cy]);													
-              if (cy % 50 == 0) {
-                x_mem = extend_size(x_mem, cy);
-                y_mem = extend_size(y_mem, cy);
-              }
               for (int i = 0; i < envJustNum; i++) {
                 BDD negp = env.justiceAt(i).not();
-                x = z.id();
+                BDD x = z.id();
+                BDD allowedTransitions = Env.FALSE().id();
                 for (iterX = new FixPoint<BDD>(); iterX.advance(x);) {
-                  x = negp.and(yieldStatesWithRestrictedTransitions(x, costFreeTransitions)).or(y);
+                  allowedTransitions = Env.prime(x.and(negp)).and(costFreeTransitions).or(costlyTransition);
+                  x = x.and(env.trans().imp(allowedTransitions.exist(sys.modulePrimeVars())).forAll(env.modulePrimeVars()));
                 }
-                x_mem[j][i][cy] = x.id();
-                //System.out.println("X ["+ j + ", " + i + ", " + cy + "] = " + x_mem[j][i][cy]);							
+                transitionStorage.get(new CostPairOrderedByPreference(level+1,additionalTransitionCost+currentTransitionCost)).add(allowedTransitions);
                 y = y.id().or(x);
-                cy++;
               }
-
-            }*/
+            }
 
             // Add new possibilities (with waiting for the environment)
-            //paretoStorage.add(level + 1, currentTransitionCost + additionalTransitionCost, y);
+            paretoStorage.add(level + 1, currentTransitionCost + additionalTransitionCost, y);
           }
         }
       }

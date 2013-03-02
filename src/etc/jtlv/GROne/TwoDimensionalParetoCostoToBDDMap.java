@@ -49,7 +49,7 @@ class TwoDimensionalParetoCostoToBDDMap {
         BDD lastElement = Env.FALSE();
         TreeSet<Double> listOfNowSuperfluousElements = new TreeSet<Double>();
         for (Map.Entry<Double, BDD> a : storage.get(i).entrySet()) {
-          if (a.getKey()>=waitingCost) {
+          if (a.getKey()>=transitionCost) {
             BDD oldData = a.getValue();
             BDD newData = oldData.or(unprimedStates);
             if (lastElement.equals(newData)) {
