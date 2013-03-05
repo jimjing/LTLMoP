@@ -19,7 +19,6 @@ RegionFile: # Relative path of region description file
 theEvilDoor.regions
 
 Sensors: # List of sensor propositions and their state (enabled = 1, disabled = 0)
-BlockedA, 1
 BlockedB, 1
 
 
@@ -46,7 +45,7 @@ go to r7
 
 # always not BlockedA or not BlockedB
 infinitely often not BlockedB
-do BlockedA unless you sensed not BlockedA
+# do BlockedA unless you sensed not BlockedA
 # if BlockedA then do not r3
 if BlockedB then do not r6
 
