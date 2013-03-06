@@ -1,4 +1,3 @@
-
 import java.util.Iterator;
 import java.util.Stack;
 import java.util.Vector;
@@ -122,7 +121,7 @@ public class GROneGame {
     }
     
     // Now compute a strategy
-    BDD costFreeTransitions = costData.get(0.0);
+    BDD costFreeTransitions = costData.get(0.0).and(sys.trans());
     //System.out.println("These are the cost-tree transitions: ");
     //costFreeTransitions.and(sys.trans()).printSet();
     
@@ -166,7 +165,7 @@ public class GROneGame {
             y = y.or(env.trans().imp(costlyTransition.exist(sys.modulePrimeVars())).forAll(env.modulePrimeVars()));
             for (iterY = new FixPoint<BDD>(); iterY.advance(y);) {
 
-              BDD freeTransition = Env.prime(y).and(costFreeTransitions).and(sys.trans());
+              BDD freeTransition = Env.prime(y).and(costFreeTransitions);
               y = y.or(env.trans().imp(freeTransition.exist(sys.modulePrimeVars())).forAll(env.modulePrimeVars()));
               transitionStorage.get(new CostPairOrderedByPreference(level,additionalTransitionCost+currentTransitionCost)).add(freeTransition);
             
@@ -207,6 +206,12 @@ public class GROneGame {
           strategy.get(j).add(b);
         }
       }
+
+      // Sanity!!!!
+      // BDD evilness = Env.getVar("main.s", "bit0'").support().toBDD().id();
+      // evilness = evilness.and(Env.getVar("main.s", "bit1'").support().toBDD().not());
+      // evilness = evilness.and(Env.getVar("main.s", "bit2'").support().toBDD().not());
+      // evilness = evilness.and(Env.getVar("main.s", "bit3'").support().toBDD().id());
       
       
       // Backup - Classical approach
