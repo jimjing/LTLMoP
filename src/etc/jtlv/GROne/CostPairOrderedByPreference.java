@@ -38,7 +38,10 @@ public class CostPairOrderedByPreference implements Comparable <CostPairOrderedB
     if (transitionCost>arg0.transitionCost) return 1;
     return 0;
   }
-  
+
+  public String toString() {
+    return "("+Integer.toString(waitingCost)+","+Double.toString(transitionCost)+")";
+  }
   
   
 }

@@ -12,6 +12,7 @@ import edu.wis.jtlv.env.module.Module;
 import edu.wis.jtlv.lib.FixPoint;
 import edu.wis.jtlv.old_lib.games.GameException;
 import java.util.ArrayList;
+import java.util.Map.Entry;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -160,14 +161,15 @@ public class GROneGame {
       };
       
       // Sanity!!!!
-      BDD evilness = Env.TRUE(); //Env.getVar("main.s", "bit0").support().toBDD().not();
-      evilness = evilness.and(Env.getVar("main.s", "bit1").support().toBDD().not());
-      evilness = evilness.and(Env.getVar("main.s", "bit2").support().toBDD().id());
-      evilness = evilness.and(Env.getVar("main.s", "bit3").support().toBDD().not());
-      evilness = evilness.and(Env.getVar("main.s", "bit0'").support().toBDD().not());
-      evilness = evilness.and(Env.getVar("main.s", "bit1'").support().toBDD().not());
-      evilness = evilness.and(Env.getVar("main.s", "bit2'").support().toBDD().id());
-      evilness = evilness.and(Env.getVar("main.s", "bit3'").support().toBDD().not());
+      //BDD evilness = Env.getVar("main.s", "bit0").support().toBDD().not();
+      //evilness = evilness.and(Env.getVar("main.s", "bit1").support().toBDD().not());
+      //evilness = evilness.and(Env.getVar("main.s", "bit2").support().toBDD().id());
+      //evilness = evilness.and(Env.getVar("main.s", "bit3").support().toBDD().not());
+      //evilness = evilness.and(Env.getVar("main.s", "bit0'").support().toBDD().not());
+      //evilness = evilness.and(Env.getVar("main.s", "bit1'").support().toBDD().not());
+      //evilness = evilness.and(Env.getVar("main.s", "bit2'").support().toBDD().id());
+      //evilness = evilness.and(Env.getVar("main.s", "bit3'").support().toBDD().not());
+      //evilness = evilness.and(Env.getVar("main.e", "BlockedB'").support().toBDD().id());
 
 
       paretoStorage.add(0, 0.0, sys.justiceAt(j).and(z));
@@ -201,15 +203,16 @@ public class GROneGame {
                 if (totalNewCost > oldCost) {
                   BDD newTransitions = Env.prime(paretoStorage.getBDD(level, currentTargetCost)).and(costData.get(additionalTransitionCost));
                   systemTransitionsThatDoNotExceedCostLimit = systemTransitionsThatDoNotExceedCostLimit.or(newTransitions);
-                  if (level==0) {
-                    if (!(systemTransitionsThatDoNotExceedCostLimit.and(evilness).isZero())) throw new Error("Fatal Error.");
-                  }
+                  //if (level==0) {
+                  //  if (!(systemTransitionsThatDoNotExceedCostLimit.and(evilness).isZero())) throw new Error("Fatal Error.");
+                  //}
                 }
               }
             }
           }
           oldCost = newCost; // oldCost is only used above, so we can do that here already
 
+          // if ((level == 0) && (j == 3) && (Math.abs(500.132737721-newCost)<0.000001) && (transitionStorage.get(new CostPairOrderedByPreference(level, newCost)).size()==2)) throw new RuntimeException("It's here!");
           transitionStorage.get(new CostPairOrderedByPreference(level, newCost)).add(systemTransitionsThatDoNotExceedCostLimit);
 
           // Do the rest of the cox operator
@@ -218,15 +221,6 @@ public class GROneGame {
             BDD freeTransition = Env.prime(y).and(costFreeTransitions);
             y = y.or(env.trans().imp(freeTransition).exist(sys.modulePrimeVars()).forAll(env.modulePrimeVars()));
             transitionStorage.get(new CostPairOrderedByPreference(level, newCost)).add(freeTransition);
-            if (level==0) {
-              if (!(freeTransition.and(evilness).isZero())) {
-                
-                // Alert! Check if other transitions come first....
-                conitnue here
-                
-                throw new Error("Fatal Error.");
-              }
-            }
           }
 
           // Add new possibilities (without waiting for the environment)
@@ -254,7 +248,7 @@ public class GROneGame {
           for (iterY = new FixPoint<BDD>(); iterY.advance(y);) {
             BDD freeTransition = Env.prime(y).and(costFreeTransitions);
             y = y.or(env.trans().imp(freeTransition.exist(sys.modulePrimeVars())).forAll(env.modulePrimeVars()));
-            transitionStorage.get(new CostPairOrderedByPreference(level, newCost)).add(freeTransition);
+            transitionStorage.get(new CostPairOrderedByPreference(level+1, newCost)).add(freeTransition);
           }
 
           // Add new possibilities (without waiting for the environment)
@@ -265,10 +259,20 @@ public class GROneGame {
         }
 
         // Add the transitions found to the list of preferred transitions
-        for (ArrayList<BDD> a : transitionStorage.values()) {
-          for (BDD b : a) {
+        // BDD pre = Env.FALSE();
+        for (Entry<CostPairOrderedByPreference,ArrayList<BDD>> a : transitionStorage.entrySet()) {
+          for (int i=0;i<a.getValue().size();i++) {
+            BDD b = a.getValue().get(i);
+            
+            //if (!(b.and(evilness).and(pre.not())).isZero()) {
+            //  System.err.print("AAAARGH: "+a.getKey().toString()+": "+Integer.toString(i));
+            //  throw new Error("Fatal Error.");
+            //}
+            
+            // pre = pre.or(b.exist(sys.modulePrimeVars()));
+            
+            
             strategy.get(j).add(b);
-            assert (b.and(evilness).isZero());
           }
         }
 
