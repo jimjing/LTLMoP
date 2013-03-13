@@ -1,3 +1,4 @@
+
 import java.util.Iterator;
 import java.util.Stack;
 import java.util.Vector;
@@ -10,9 +11,10 @@ import edu.wis.jtlv.env.module.ModuleWithWeakFairness;
 import edu.wis.jtlv.env.module.Module;
 import edu.wis.jtlv.lib.FixPoint;
 import edu.wis.jtlv.old_lib.games.GameException;
-import edu.wis.jtlv.env.module.ModuleBDDField;
 import java.util.ArrayList;
+import java.util.SortedSet;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 /** 
  * <p>
@@ -70,6 +72,12 @@ public class GROneGame {
     defaultCostMap.put(0.0, Env.FALSE().id()); // We use below that this entry is guaranteed to exist.
     return defaultCostMap;
   }
+  
+  static Double getFirstElementInTreeSetOfDoubleHigherThan(TreeSet<Double> treeSet, Double oldValue) {
+    SortedSet<Double> tailset = treeSet.tailSet(oldValue,false);
+    if (tailset.size()==0) return null;
+    else return tailset.first();
+  }
 
   public GROneGame(ModuleWithWeakFairness env, ModuleWithWeakFairness sys, boolean fastslow)
           throws GameException {
@@ -85,9 +93,8 @@ public class GROneGame {
           throws GameException {
     this(env, sys, sys.justiceNum(), env.justiceNum(), costData, fastslow);
   }
-  
-  public ArrayList<ArrayList<BDD> > strategy; // First index: goal, second index: precedence over transitions
-  
+  public ArrayList<ArrayList<BDD>> strategy; // First index: goal, second index: precedence over transitions
+
   /**
    * <p>
    * Calculating Player-2 winning states.
@@ -98,9 +105,11 @@ public class GROneGame {
   private BDD calculate_win() {
     BDD z;
     FixPoint<BDD> iterZ, iterY, iterX;
-    
-    if (envJustNum==0) throw new RuntimeException("Can only deal with settings that have at least one environment assumption!");
-    
+
+    if (envJustNum == 0) {
+      throw new RuntimeException("Can only deal with settings that have at least one environment assumption!");
+    }
+
     // First compute the winning positions
     z = Env.TRUE();
     for (iterZ = new FixPoint<BDD>(); iterZ.advance(z);) {
@@ -119,126 +128,178 @@ public class GROneGame {
         z = y.id();
       }
     }
-    
+
+    // Now make sure that all transitions in costData are actually allowed
+    for (Double a : costData.keySet()) {
+      costData.put(a, costData.get(a).and(sys.trans()));
+    }
+
     // Now compute a strategy
-    BDD costFreeTransitions = costData.get(0.0).and(sys.trans());
+    BDD costFreeTransitions = costData.get(0.0);
     //System.out.println("These are the cost-tree transitions: ");
-    //costFreeTransitions.and(sys.trans()).printSet();
-    
+    //costFreeTransitions.printSet();
+
     strategy = new ArrayList< ArrayList< BDD>>(sysJustNum);
     for (int j = 0; j < sysJustNum; j++) {
       strategy.add(new ArrayList< BDD>());
-      
+      System.out.println("Processing cost-based-synthesis for Goal number " + Integer.toString(j));
+
       // Synthesize with cost - Allocate data structures
+      // the Pareto Storage stores with states can be reached with what cost,
       TwoDimensionalParetoCostoToBDDMap paretoStorage = new TwoDimensionalParetoCostoToBDDMap();
-      TreeMap<CostPairOrderedByPreference,ArrayList<BDD> > transitionStorage = new TreeMap<CostPairOrderedByPreference,ArrayList<BDD> >() {
-        
-        @Override public ArrayList<BDD> get(Object key) {
-            ArrayList<BDD> data = super.get(key);
-            if (data==null) put((CostPairOrderedByPreference)key,new ArrayList<BDD>());
-            return super.get(key);
+      TreeMap<CostPairOrderedByPreference, ArrayList<BDD>> transitionStorage = new TreeMap<CostPairOrderedByPreference, ArrayList<BDD>>() {
+
+        @Override
+        public ArrayList<BDD> get(Object key) {
+          ArrayList<BDD> data = super.get(key);
+          if (data == null) {
+            put((CostPairOrderedByPreference) key, new ArrayList<BDD>());
+          }
+          return super.get(key);
         }
       };
       
+      // Sanity!!!!
+      BDD evilness = Env.TRUE(); //Env.getVar("main.s", "bit0").support().toBDD().not();
+      evilness = evilness.and(Env.getVar("main.s", "bit1").support().toBDD().not());
+      evilness = evilness.and(Env.getVar("main.s", "bit2").support().toBDD().id());
+      evilness = evilness.and(Env.getVar("main.s", "bit3").support().toBDD().not());
+      evilness = evilness.and(Env.getVar("main.s", "bit0'").support().toBDD().not());
+      evilness = evilness.and(Env.getVar("main.s", "bit1'").support().toBDD().not());
+      evilness = evilness.and(Env.getVar("main.s", "bit2'").support().toBDD().id());
+      evilness = evilness.and(Env.getVar("main.s", "bit3'").support().toBDD().not());
+
+
       paretoStorage.add(0, 0.0, sys.justiceAt(j).and(z));
-      for (int level = 0; level <= paretoStorage.getMaxDiscreteCost(); level++) {
+      
+      TreeSet<Double> currentTargetCostsThatWeHaveToConsider = null;
+      TreeSet<Double> nextTargetCostsThatWeHaveToConsider = new TreeSet<Double>();
         
-        for (Double currentTransitionCost = paretoStorage.getNextTransitionCostAtDiscreteLevel(level, Double.NEGATIVE_INFINITY); currentTransitionCost != null; currentTransitionCost = paretoStorage.getNextTransitionCostAtDiscreteLevel(level, currentTransitionCost)) {
+      for (int level = 0; level <= paretoStorage.getMaxDiscreteCost(); level++) {
 
-          // Iterate over all possible cost additions
-          BDD systemTransitionsThatDoNotExceedCostLimit = Env.FALSE().id();
-          for (Double additionalTransitionCost : costData.keySet()) {
-            systemTransitionsThatDoNotExceedCostLimit = systemTransitionsThatDoNotExceedCostLimit.or(costData.get(additionalTransitionCost));
+        // Collect in a BDD the transitions that we may take and that do not exceed our cost limit
+        currentTargetCostsThatWeHaveToConsider = nextTargetCostsThatWeHaveToConsider;
+        nextTargetCostsThatWeHaveToConsider = new TreeSet<Double>();
+        for (Double a : costData.keySet()) {
+          currentTargetCostsThatWeHaveToConsider.add(a);
+        }
+        
+        Double oldCost = -1.0;
+        Double newCost = 0.0;
+        BDD systemTransitionsThatDoNotExceedCostLimit = Env.FALSE().id();
 
-            System.out.println("Processing cost-based-synthesis at level "+Integer.toString(level)+" and transition cost "+Double.toString(currentTransitionCost)+"+"+Double.toString(additionalTransitionCost));
-            // systemTransitionsThatDoNotExceedCostLimit.printDot();
+                
+        for (; newCost != null; newCost = getFirstElementInTreeSetOfDoubleHigherThan(currentTargetCostsThatWeHaveToConsider,oldCost)) {
 
-            // Compute fixed point over cost-free transitions
-            // Start with the no-waiting case
-            
-            // Compute costly transition
-            BDD y = paretoStorage.getBDD(level, currentTransitionCost);
-            BDD costlyTransition = Env.prime(y).and(systemTransitionsThatDoNotExceedCostLimit).and(sys.trans());
-            transitionStorage.get(new CostPairOrderedByPreference(level,additionalTransitionCost+currentTransitionCost)).add(costlyTransition);
-            
-            // Do the rest of the cox operator
-            y = y.or(env.trans().imp(costlyTransition.exist(sys.modulePrimeVars())).forAll(env.modulePrimeVars()));
-            for (iterY = new FixPoint<BDD>(); iterY.advance(y);) {
+          System.out.println("Processing cost-based-synthesis at level " + Integer.toString(level) + " and transition cost " + Double.toString(newCost));
 
-              BDD freeTransition = Env.prime(y).and(costFreeTransitions);
-              y = y.or(env.trans().imp(freeTransition.exist(sys.modulePrimeVars())).forAll(env.modulePrimeVars()));
-              transitionStorage.get(new CostPairOrderedByPreference(level,additionalTransitionCost+currentTransitionCost)).add(freeTransition);
-            
-            }
-
-            // Add new possibilities (without waiting for the environment)
-            paretoStorage.add(level, currentTransitionCost + additionalTransitionCost, y);
-
-            
-            // What about waiting for environment?
-            y = paretoStorage.getBDD(level, currentTransitionCost);
-            costlyTransition = Env.prime(y).and(systemTransitionsThatDoNotExceedCostLimit).and(sys.trans());
-            
-            // Do the rest of the iteration
-            for (iterY = new FixPoint<BDD>(); iterY.advance(y);) {
-              for (int i = 0; i < envJustNum; i++) {
-                BDD negp = env.justiceAt(i).not();
-                BDD x = z.id();
-                BDD allowedTransitions = Env.FALSE().id();
-                for (iterX = new FixPoint<BDD>(); iterX.advance(x);) {
-                  allowedTransitions = Env.prime(x.and(negp)).and(costFreeTransitions).or(costlyTransition);
-                  x = x.and(env.trans().imp(allowedTransitions.exist(sys.modulePrimeVars())).forAll(env.modulePrimeVars()));
+          // Find new transitions that do not exceed the limit
+          for (Double currentTargetCost = paretoStorage.getNextTransitionCostAtDiscreteLevel(level, Double.NEGATIVE_INFINITY); currentTargetCost != null; currentTargetCost = paretoStorage.getNextTransitionCostAtDiscreteLevel(level, currentTargetCost)) {
+            for (Double additionalTransitionCost : costData.keySet()) {
+              Double totalNewCost = additionalTransitionCost + currentTargetCost;
+              if (totalNewCost <= newCost) {
+                if (totalNewCost > oldCost) {
+                  BDD newTransitions = Env.prime(paretoStorage.getBDD(level, currentTargetCost)).and(costData.get(additionalTransitionCost));
+                  systemTransitionsThatDoNotExceedCostLimit = systemTransitionsThatDoNotExceedCostLimit.or(newTransitions);
+                  if (level==0) {
+                    if (!(systemTransitionsThatDoNotExceedCostLimit.and(evilness).isZero())) throw new Error("Fatal Error.");
+                  }
                 }
-                transitionStorage.get(new CostPairOrderedByPreference(level+1,additionalTransitionCost+currentTransitionCost)).add(allowedTransitions);
-                y = y.id().or(x);
               }
             }
+          }
+          oldCost = newCost; // oldCost is only used above, so we can do that here already
 
-            // Add new possibilities (with waiting for the environment)
-            paretoStorage.add(level + 1, currentTransitionCost + additionalTransitionCost, y);
+          transitionStorage.get(new CostPairOrderedByPreference(level, newCost)).add(systemTransitionsThatDoNotExceedCostLimit);
+
+          // Do the rest of the cox operator
+          BDD y = env.trans().imp(systemTransitionsThatDoNotExceedCostLimit).exist(sys.modulePrimeVars()).forAll(env.modulePrimeVars());
+          for (iterY = new FixPoint<BDD>(); iterY.advance(y);) {
+            BDD freeTransition = Env.prime(y).and(costFreeTransitions);
+            y = y.or(env.trans().imp(freeTransition).exist(sys.modulePrimeVars()).forAll(env.modulePrimeVars()));
+            transitionStorage.get(new CostPairOrderedByPreference(level, newCost)).add(freeTransition);
+            if (level==0) {
+              if (!(freeTransition.and(evilness).isZero())) {
+                
+                // Alert! Check if other transitions come first....
+                conitnue here
+                
+                throw new Error("Fatal Error.");
+              }
+            }
+          }
+
+          // Add new possibilities (without waiting for the environment)
+          if (paretoStorage.add(level, newCost, y)) {
+            for (Double a : costData.keySet()) {
+              currentTargetCostsThatWeHaveToConsider.add(newCost+a);
+            }
+          }
+
+          // Consider the case of waiting for the environment
+          for (int i = 0; i < envJustNum; i++) {
+            BDD negp = env.justiceAt(i).not();
+            BDD x = z.id();
+            BDD allowedTransitions = Env.FALSE().id();
+            for (iterX = new FixPoint<BDD>(); iterX.advance(x);) {
+              allowedTransitions = systemTransitionsThatDoNotExceedCostLimit.id();
+              allowedTransitions = allowedTransitions.or(Env.prime(x.and(negp)).and(costFreeTransitions));
+              x = x.and(env.trans().imp(allowedTransitions).exist(sys.modulePrimeVars()).forAll(env.modulePrimeVars()));
+            }
+            transitionStorage.get(new CostPairOrderedByPreference(level + 1, newCost)).add(allowedTransitions);
+            y = y.id().or(x);
+          }
+
+          // Finally, work forward towards the waiting period
+          for (iterY = new FixPoint<BDD>(); iterY.advance(y);) {
+            BDD freeTransition = Env.prime(y).and(costFreeTransitions);
+            y = y.or(env.trans().imp(freeTransition.exist(sys.modulePrimeVars())).forAll(env.modulePrimeVars()));
+            transitionStorage.get(new CostPairOrderedByPreference(level, newCost)).add(freeTransition);
+          }
+
+          // Add new possibilities (without waiting for the environment)
+          if (paretoStorage.add(level + 1, newCost, y)) {
+            nextTargetCostsThatWeHaveToConsider.add(newCost);
+          }
+
+        }
+
+        // Add the transitions found to the list of preferred transitions
+        for (ArrayList<BDD> a : transitionStorage.values()) {
+          for (BDD b : a) {
+            strategy.get(j).add(b);
+            assert (b.and(evilness).isZero());
           }
         }
-      }
 
-      // Add the transitions found to the list of preferred transitions
-      for (ArrayList<BDD> a : transitionStorage.values()) {
-        for (BDD b : a) {
-          strategy.get(j).add(b);
-        }
-      }
+        // Backup - Classical approach
+        BDD y = sys.justiceAt(j).and(z);
+        for (iterY = new FixPoint<BDD>(); iterY.advance(y);) {
 
-      // Sanity!!!!
-      // BDD evilness = Env.getVar("main.s", "bit0'").support().toBDD().id();
-      // evilness = evilness.and(Env.getVar("main.s", "bit1'").support().toBDD().not());
-      // evilness = evilness.and(Env.getVar("main.s", "bit2'").support().toBDD().not());
-      // evilness = evilness.and(Env.getVar("main.s", "bit3'").support().toBDD().id());
-      
-      
-      // Backup - Classical approach
-      BDD y = sys.justiceAt(j).and(z);
-      for (iterY = new FixPoint<BDD>(); iterY.advance(y);) {
-
-        // Prefer non-waiting solutions
-        for (FixPoint<BDD> iterY2 = new FixPoint<BDD>(); iterY2.advance(y);) {
-          y = env.yieldStates(sys, y).or(y);
-          BDD goodTransitions = Env.prime(y).and(sys.trans());
-          strategy.get(j).add(goodTransitions);
-        }
-        
-        for (int i = 0; i < envJustNum; i++) {
-          BDD negp = env.justiceAt(i).not();
-          BDD x = z.id();
-          for (iterX = new FixPoint<BDD>(); iterX.advance(x);) {
-            x = env.yieldStates(sys, x.and(negp).or(y));
+          // Prefer non-waiting solutions
+          for (FixPoint<BDD> iterY2 = new FixPoint<BDD>(); iterY2.advance(y);) {
+            y = env.yieldStates(sys, y).or(y);
+            BDD goodTransitions = Env.prime(y).and(sys.trans());
+            strategy.get(j).add(goodTransitions);
           }
-          BDD goodTransitions = Env.prime(x).and(sys.trans());
-          strategy.get(j).add(goodTransitions);
-          y = y.id().or(x);
+
+          for (int i = 0; i < envJustNum; i++) {
+            BDD negp = env.justiceAt(i).not();
+            BDD x = z.id();
+            for (iterX = new FixPoint<BDD>(); iterX.advance(x);) {
+              x = env.yieldStates(sys, x.and(negp).or(y));
+            }
+            BDD goodTransitions = Env.prime(x).and(sys.trans());
+            strategy.get(j).add(goodTransitions);
+            y = y.id().or(x);
+          }
         }
       }
     }
     return z;
   }
+
+  
 
   private BDD yieldStatesWithRestrictedTransitions(BDD to, BDD systemTransitions) {
     BDDVarSet responder_prime = sys.modulePrimeVars();
@@ -276,7 +337,6 @@ public class GROneGame {
     return this1.trans().and(exy).exist(this_prime);
   }
 
-  
   /**
    * <p>
    * Extracting an arbitrary implementation from the set of possible
@@ -293,7 +353,6 @@ public class GROneGame {
     // return calculate_strategy(19);
     // return calculate_strategy(23);
   }
-
 
   /**
    * <p>
@@ -320,8 +379,8 @@ public class GROneGame {
    *            true if a deterministic strategy is desired, otherwise false
    */
   public boolean calculate_strategy(BDD ini) {
-    
-    
+
+
     Stack<BDD> st_stack = new Stack<BDD>();
     Stack<Integer> j_stack = new Stack<Integer>();
     Stack<RawState> aut = new Stack<RawState>();
@@ -332,7 +391,7 @@ public class GROneGame {
       result = true;
     }
 
-    
+
     BDDIterator ini_iterator = ini.iterator(env.moduleUnprimeVars().union(sys.moduleUnprimeVars()));
     while (ini_iterator.hasNext()) {
       BDD this_ini = (BDD) ini_iterator.next();
@@ -378,15 +437,15 @@ public class GROneGame {
         } else {
           new_state = aut.elementAt(nidx);
         }
-        
-        
-        
+
+
+
         for (BDDIterator all_states = Env.TRUE().iterator(env.modulePrimeVars()); all_states.hasNext();) {
           BDD nextInput = (BDD) all_states.next();
           BDD searchingForOutputFrom = nextInput.and(p_st);
-          
-          boolean done=false; 
-          for (int k=0;(k<strategy.get(p_j).size()) && !done;k++) {
+
+          boolean done = false;
+          for (int k = 0; (k < strategy.get(p_j).size()) && !done; k++) {
             BDD conjunction = strategy.get(p_j).get(k).and(searchingForOutputFrom);
             if (!(conjunction.isZero())) {
               // Successor found
@@ -395,16 +454,16 @@ public class GROneGame {
               BDD nextStatePossibilitiesThatSatisfyLivenessGoal = nextStatePossitibilities.and(sys.justiceAt(p_j));
               if (!(nextStatePossibilitiesThatSatisfyLivenessGoal.isZero())) {
                 BDDIterator candIter = nextStatePossibilitiesThatSatisfyLivenessGoal.iterator(env.moduleUnprimeVars().union(
-                  sys.moduleUnprimeVars()));
+                        sys.moduleUnprimeVars()));
                 BDD one_cand = (BDD) candIter.next();
-                
+
                 int next_p_j = (p_j + 1) % sysJustNum;
                 // Cycle through goals that are trivially satisfied by staying in the exact same state.
                 // (This is essentially stutter-state removal)
                 while (!one_cand.and(sys.justiceAt(next_p_j)).isZero() && next_p_j != p_j) {
                   next_p_j = (next_p_j + 1) % sysJustNum;
                 }
-            
+
                 RawState gsucc = new RawState(aut.size(), one_cand, next_p_j);
                 idx = aut.indexOf(gsucc); // the equals doesn't consider
                 // the id number.
@@ -415,12 +474,12 @@ public class GROneGame {
                   idx = aut.indexOf(gsucc);
                 }
                 new_state.add_succ(aut.elementAt(idx));
-                
+
               } else {
                 BDDIterator candIter = nextStatePossitibilities.iterator(env.moduleUnprimeVars().union(
-                  sys.moduleUnprimeVars()));
+                        sys.moduleUnprimeVars()));
                 BDD one_cand = (BDD) candIter.next();
-                
+
                 RawState gsucc = new RawState(aut.size(), one_cand, p_j);
                 idx = aut.indexOf(gsucc); // the equals doesn't consider
                 // the id number.
@@ -433,8 +492,8 @@ public class GROneGame {
                 new_state.add_succ(aut.elementAt(idx));
               }
             }
-            
-            
+
+
           }
           if (!done) {
             throw new RuntimeException("Found no successor.");
@@ -459,7 +518,6 @@ public class GROneGame {
     return result;
   }
 
- 
   /**
    * <p>
    * Extracting a safety automaton characterizing all allowed system moves. 
