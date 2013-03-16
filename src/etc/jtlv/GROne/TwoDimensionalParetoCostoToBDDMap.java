@@ -25,8 +25,10 @@ class TwoDimensionalParetoCostoToBDDMap {
    * @param waitingCost The discrete waiting cost under which the new states can be reached
    * @param transitionCost The continuous transition cost (e.g., distance to be traveled by the robot)
    * @param unprimedStates The new states
+   * @return If any new state was actually added - sometimes, all states were already covered by lower
+   *         cost tuples and then this function returns false
    */
-  public void add(int waitingCost, double transitionCost, BDD unprimedStates) {
+  public boolean add(int waitingCost, double transitionCost, BDD unprimedStates) {
     BDD oldStates = Env.FALSE().id();
     for (int i=0;(i<storage.size() && (i<=waitingCost));i++) {
       for (Map.Entry<Double, BDD> a : storage.get(i).entrySet()) {
@@ -65,7 +67,9 @@ class TwoDimensionalParetoCostoToBDDMap {
         }
       }
     
-      
+      return true;
+    } else {
+      return false;
     }
   }
   
