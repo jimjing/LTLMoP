@@ -16,12 +16,12 @@ CurrentConfigName:
 test
 
 Customs: # List of custom propositions
-allDone
-d1
-d2
-d3
-d4
-f1
+m1
+m2
+m3
+m4
+mAll
+m5
 
 RegionFile: # Relative path of region description file
 milkDelivery.regions
@@ -38,42 +38,43 @@ r4 = p12
 r5 = p13
 r6 = p14
 r7 = p15
+others = 
 r1 = p9
 r2 = p10
 r3 = p11
-h2 = p5
-h3 = p6
-h1 = p4
+H2 = p3
+S2 = p7
+S1 = p6
+H1 = p2
 r8 = p16
 r9 = p17
-h4 = p7
-b1 = p1
-others = 
-c2 = p3
-c1 = p2
+H4 = p5
+B1 = p1
+H3 = p4
 
 Spec: # Specification in structured English
-group house is h1,h2,h3,h4
-group cow is c1,c2
+group house is H1,H2,H3,H4
+group station is S1,S2
 
+# Assumption of the environment goal
 infinitely often not bridgeBlocked
 
-d1 is set on (emptyBucket or h1) and reset on allDone
-d2 is set on (emptyBucket or h2) and reset on allDone
-d3 is set on (emptyBucket or h3) and reset on allDone
-d4 is set on (emptyBucket or h4) and reset on allDone
-f1 is set on (not emptyBucket or c1 or c2) and reset on allDone
+# Use a memory proposition for each robot goals
+m1 is set on (emptyBucket or H1) and reset on mAll
+m2 is set on (emptyBucket or H2) and reset on mAll
+m3 is set on (emptyBucket or H3) and reset on mAll
+m4 is set on (emptyBucket or H4) and reset on mAll
+m5 is set on (not emptyBucket or S1 or S2) and reset on mAll
+# When all robot goals are satisfied
+do mAll if and only if (m1 and m2 and m3 and m4 and m5)
 
-
-#if you are not sensing emptyBucket then visit all house
-#if you are sensing emptyBucket then visit any cow
-
+# Robot should deliver the milk if it reaches a house and the bucket is not empty
 do deliver if and only if you are not sensing emptyBucket and you are in any house
+# Robot should refill the bucket at any station if the bucket is empty
+do refill if and only if you are sensing emptyBucket and you are in any station
+# Do not go to the bridge if it is blocked
+if you are sensing bridgeBlocked then do not B1
 
-do refill if and only if you are sensing emptyBucket and you are in any cow
-
-if you are sensing bridgeBlocked then do not b1
-
-do allDone if and only if (d1 and d2 and d3 and d4 and f1)
-infinitely often allDone
+# The modified robot goal
+infinitely often mAll
 
