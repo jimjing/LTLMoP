@@ -39,7 +39,7 @@ public class GROneMain {
       } while ((variableList.length()==0) || (variableList.substring(0,1).equals("#")) || (variableList.equals("TransitionsCost:")));
           
       String[] variables = variableList.split("\\s");
-      for (int i = 0;i<variables.length-3;i++) { // Ignore the last three entries as they should be "cost	region1Name	region2Name"
+      for (int i = 0;i<variables.length-1;i++) { // Ignore the last one entries as it should be "cost"
         String a = variables[i];
          ModuleBDDField field;
          field = Env.getVar("main.s", a);
@@ -55,16 +55,10 @@ public class GROneMain {
          careSetVariables.add(field.support().toBDD());
       }
       
-      if (variables.length<3) {
+      if (variables.length<1) {
         throw new Error("Variable list in cost file is too short.");
       }
-      if (!(variables[variables.length-1].equals("region2Name"))) {
-        throw new Error("Expected 'region2Name' as header after variable list");
-      }
-      if (!(variables[variables.length-2].equals("region1Name"))) {
-        throw new Error("Expected 'region1Name' as header after variable list");
-      }
-      if (!(variables[variables.length-3].equals("cost"))) {
+      if (!(variables[variables.length-1].equals("cost"))) {
         throw new Error("Expected 'cost' as header after variable list");
       }
 

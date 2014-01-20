@@ -12,7 +12,8 @@ public class CostPairOrderedByPreference implements Comparable <CostPairOrderedB
   private double transitionCost;
   
   public CostPairOrderedByPreference(int _waitingCost, double _transitionCost) {
-    waitingCost = _waitingCost;
+    //waitingCost = _waitingCost;
+    waitingCost = 0; // ignore waiting cost
     transitionCost = _transitionCost;
   }
 

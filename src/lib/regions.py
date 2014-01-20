@@ -422,23 +422,21 @@ class RegionFileInterface(object):
         regionData = []
         # put the data format in a string
         dataFormat = ['bit'+str(i) for i in range(numBits)]
+        dataFormat.append('BlockedB')
         dataFormat.extend(['bit'+str(i)+'\'' for i in range(numBits)])
-        dataFormat = "\t".join(dataFormat)+'\tcost\tregion1Name\tregion2Name'
+        dataFormat.append('BlockedB\'')
+        dataFormat = "\t".join(dataFormat)+'\tcost'
         # the first line of data will be the format 
         transitionCostData = [dataFormat]
         for region1, destinations in enumerate(self.transitionCost):
             for region2, cost in enumerate(destinations[region1+1:]):
                 if cost == []: continue # no transition between the two regions
-                
+
                 region2Index = region1 + 1 + region2
                 # transition from region1 to region2
-                transitionCostData.append("\t".join([self.bitEncoding(region1,numBits),self.bitEncoding(region2Index,numBits),
-                                            str(self.transitionCost[region1][region2Index]),
-                                            self.regions[region1].name,self.regions[region2Index].name]))
+                transitionCostData.append("\t".join([self.bitEncoding(region1,numBits), '1', self.bitEncoding(region2Index,numBits), '1', str(self.transitionCost[region1][region2Index])]))
                 # transition from region2 to region1
-                transitionCostData.append("\t".join([self.bitEncoding(region2Index,numBits),self.bitEncoding(region1,numBits), 
-                                            str(self.transitionCost[region1][region2Index]),
-                                            self.regions[region2Index].name,self.regions[region1].name]))
+                transitionCostData.append("\t".join([self.bitEncoding(region2Index,numBits), '1', self.bitEncoding(region1,numBits), '1', str(self.transitionCost[region1][region2Index])]))
         data = {"TransitionsCost": transitionCostData}
 
         fileMethods.writeToFile(filename, data, comments)
