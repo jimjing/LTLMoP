@@ -422,9 +422,7 @@ class RegionFileInterface(object):
         regionData = []
         # put the data format in a string
         dataFormat = ['bit'+str(i) for i in range(numBits)]
-        dataFormat.append('BlockedB')
         dataFormat.extend(['bit'+str(i)+'\'' for i in range(numBits)])
-        dataFormat.append('BlockedB\'')
         dataFormat = "\t".join(dataFormat)+'\tcost'
         # the first line of data will be the format 
         transitionCostData = [dataFormat]
@@ -434,9 +432,9 @@ class RegionFileInterface(object):
 
                 region2Index = region1 + 1 + region2
                 # transition from region1 to region2
-                transitionCostData.append("\t".join([self.bitEncoding(region1,numBits), '1', self.bitEncoding(region2Index,numBits), '1', str(self.transitionCost[region1][region2Index])]))
+                transitionCostData.append("\t".join([self.bitEncoding(region1,numBits), self.bitEncoding(region2Index,numBits), str(self.transitionCost[region1][region2Index])]))
                 # transition from region2 to region1
-                transitionCostData.append("\t".join([self.bitEncoding(region2Index,numBits), '1', self.bitEncoding(region1,numBits), '1', str(self.transitionCost[region1][region2Index])]))
+                transitionCostData.append("\t".join([self.bitEncoding(region2Index,numBits), self.bitEncoding(region1,numBits), str(self.transitionCost[region1][region2Index])]))
         data = {"TransitionsCost": transitionCostData}
 
         fileMethods.writeToFile(filename, data, comments)
