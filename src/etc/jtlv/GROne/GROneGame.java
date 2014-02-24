@@ -444,9 +444,9 @@ public class GROneGame {
 
 
 
-        for (BDDIterator all_states = Env.TRUE().iterator(env.modulePrimeVars()); all_states.hasNext();) {
+        for (BDDIterator all_states = env.succ(p_st).iterator(env.moduleUnprimeVars()); all_states.hasNext();) {
           BDD nextInput = (BDD) all_states.next();
-          BDD searchingForOutputFrom = nextInput.and(p_st);
+          BDD searchingForOutputFrom = Env.prime(nextInput).and(p_st);
 
           boolean done = false;
           for (int k = 0; (k < strategy.get(p_j).size()) && !done; k++) {
