@@ -15,7 +15,9 @@
 """
 
 import wx, sys, os, socket
-import fileMethods, regions, project
+import fileMethods, regions, project, execute, handlerSubsystem
+import logging
+import globalConfig
 from numpy import *
 import mapRenderer
 from _transformations import affine_matrix_from_points
@@ -51,11 +53,19 @@ class CalibrateFrame(wx.Frame):
         else:
             self.configEditorPort = None
 
-        # Load configuration files
-
+        # Update with this new project
+        self.executor = execute.LTLMoPExecutor()
         self.proj = project.Project()
-        self.proj.setSilent(True)
         self.proj.loadProject(sys.argv[1])
+        self.executor.proj = self.proj
+        self.hsub = handlerSubsystem.HandlerSubsystem(self.executor, self.proj.project_root)
+        self.executor.hsub = self.hsub
+
+        logging.info("Setting current executing config...")
+        config, success = self.executor.hsub.loadConfigFile(self.proj.current_config)
+        if success: self.executor.hsub.configs.append(config)
+        self.executor.hsub.setExecutingConfig(self.proj.current_config)
+
 
         if self.proj.current_config != "calibrate":
             print "(ERROR) Calibration can only be run on a specification file with a calibration configuration.\nPlease use ConfigEditor to calibrate a configuration."
@@ -64,7 +74,8 @@ class CalibrateFrame(wx.Frame):
         # Initialize the init and pose handlers
 
         print "Importing handler functions..."
-        self.proj.importHandlers(['init','pose'])
+        logging.info("Instantiate all handlers...")
+        self.hsub.instantiateAllHandlers()
 
         self.panel_map.SetBackgroundColour(wx.WHITE)
         self.panel_map.SetBackgroundStyle(wx.BG_STYLE_CUSTOM)
@@ -155,7 +166,7 @@ class CalibrateFrame(wx.Frame):
 
             self.markerPos = None # Disable blinking circle
 
-            pose = self.proj.h_instance['pose'].getPose()
+            pose = self.hsub.getPose()
 
             new_pt = mat(pose[0:2]).T
             if real_pts is None:
