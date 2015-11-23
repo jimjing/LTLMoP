@@ -1,4 +1,4 @@
-import os, sys
+﻿import os, sys
 import re
 import time
 import math
@@ -19,6 +19,7 @@ import fsa
 from copy import deepcopy
 from cores.coreUtils import *
 import handlerSubsystem
+import libraryToLTL
 
 from asyncProcesses import AsynchronousProcessThread
 
@@ -364,6 +365,17 @@ class SpecCompiler(object):
         LTLspec_sys += "\n&\n" + self.spec['InitRegionSanityCheck']
 
         LTLspec_sys += "\n&\n" + self.spec['Topo']
+
+        if self.proj.compile_options["decompose"]:
+                stay_there_formula = createStayFormula([r.name for r in self.parser.proj.rfi.regions], use_bits=self.proj.compile_options["use_region_bit_encoding"])
+        else:
+                stay_there_formula = createStayFormula([r.name for r in self.proj.rfi.regions], use_bits=self.proj.compile_options["use_region_bit_encoding"])
+
+        LTLC = libraryToLTL.LTLCreator()
+        LTLC.FindEntries()
+        LTLC.CreateLTL(stay_there_formula)
+        if len(LTLC.LTL_formula_list) > 0:
+            LTLspec_sys += "\n&\n" + "&\n".join(LTLC.LTL_formula_list)
 
         createLTLfile(self.proj.getFilenamePrefix(), LTLspec_env, LTLspec_sys)
 

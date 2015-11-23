@@ -1,4 +1,4 @@
-import xml.etree.ElementTree as ET
+﻿import xml.etree.ElementTree as ET
 from libraryToLTL import ValueType
 from createMLibrary import CreateElementFromList 
 
@@ -16,7 +16,7 @@ def run():
     CreateElementFromList(properties, "direction", ValueType.Choice, ["F", "L", "R", "B"])
 
     prop = ET.SubElement(mapping, "Proposition")
-    prop.attrib["Name"] = "push"
+    prop.attrib["Name"] = "pushDoor"
     environment = ET.SubElement(prop, "Environment")
     environment.attrib["Name"] = "Door"
     CreateElementFromList(environment, "sizeX", ValueType.Single, [3])
@@ -25,7 +25,26 @@ def run():
     CreateElementFromList(environment, "mass", ValueType.Single, [5])
     properties = ET.SubElement(prop, "Property")
     CreateElementFromList(properties, "action", ValueType.Single, ["Push"])
-    CreateElementFromList(properties, "direction", ValueType.Choice, ["F"])
+
+    prop = ET.SubElement(mapping, "Proposition")
+    prop.attrib["Name"] = "crawl"
+    environment = ET.SubElement(prop, "Environment")
+    environment.attrib["Name"] = "Ceiling"
+    CreateElementFromList(environment, "height", ValueType.Single, [7])
+    properties = ET.SubElement(prop, "Property")
+    CreateElementFromList(properties, "action", ValueType.Single, ["Move"])
+    CreateElementFromList(properties, "direction", ValueType.Choice, ["F", "L", "R", "B"])
+
+    prop = ET.SubElement(mapping, "Proposition")
+    prop.attrib["Name"] = "pushMouse"
+    environment = ET.SubElement(prop, "Environment")
+    environment.attrib["Name"] = "Mouse"
+    CreateElementFromList(environment, "sizeX", ValueType.Single, [3])
+    CreateElementFromList(environment, "sizeY", ValueType.Single, [3])
+    CreateElementFromList(environment, "sizeZ", ValueType.Single, [1])
+    CreateElementFromList(environment, "mass", ValueType.Single, [5])
+    properties = ET.SubElement(prop, "Property")
+    CreateElementFromList(properties, "action", ValueType.Single, ["Push"])
 
     prop = ET.SubElement(mapping, "Proposition")
     prop.attrib["Name"] = "takePhoto"
@@ -46,16 +65,7 @@ def run():
     CreateElementFromList(environment, "posZ", ValueType.Single, [1])
     properties = ET.SubElement(prop, "Property")
     CreateElementFromList(properties, "action", ValueType.Single, ["Press"])
-
-    prop = ET.SubElement(mapping, "Proposition")
-    prop.attrib["Name"] = "crawl"
-    environment = ET.SubElement(prop, "Environment")
-    environment.attrib["Name"] = "Ceiling"
-    CreateElementFromList(environment, "height", ValueType.Single, [7])
-    properties = ET.SubElement(prop, "Property")
-    CreateElementFromList(properties, "action", ValueType.Single, ["Move"])
-    CreateElementFromList(properties, "direction", ValueType.Choice, ["F", "L", "R", "B"])
-
+    
     prop = ET.SubElement(mapping, "Proposition")
     prop.attrib["Name"] = "climb"
     environment = ET.SubElement(prop, "Environment")
@@ -67,12 +77,10 @@ def run():
     CreateElementFromList(properties, "action", ValueType.Single, ["Move"])
     CreateElementFromList(properties, "direction", ValueType.Choice, ["F", "B"])
 
-
-
     tree = ET.ElementTree(mapping)
 
     with open("Mapping.xml","wb") as file_handle:
         tree.write(file_handle, encoding="utf-8", xml_declaration=True)
-if __name__ == "__main__":
-    run()
-    print "Created new mapping"
+
+run()
+print "Created new mapping"

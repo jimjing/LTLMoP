@@ -1,4 +1,5 @@
 ﻿import xml.etree.ElementTree as ET
+import itertools
 
 class ValueType:
     Single = 1 # A single number
@@ -259,9 +260,56 @@ class LibraryInterface(object):
                 entry_list.append(entry)
         return entry_list
 
+class LTLCreator(object):
+    def __init__(self, *args, **kwargs):
+        super(LTLCreator, self).__init__(*args, **kwargs)
+        self.LI = LibraryInterface()
+        self.MI = MappingInterface()
+        self.LI.unpackLibrary()
+        self.MI.unpackMapping()
 
+        self.prop2entries = {}
+        self.LTL_formula_list = []
 
+    def FindEntries(self):
+        for prop in self.MI.prop_list:
+            self.prop2entries[prop] = self.LI.findEntryListWithPropMapping(prop)
+            print "{}: {}".format(prop.name, len(self.prop2entries[prop]))
 
+    def CreateLTL(self, stay_there_formula):
+        prop_list = self.prop2entries.keys()
+        candidates = itertools.combinations(prop_list,2)
+        for prop_pair in candidates:
+            entry_set_a = set(self.prop2entries[prop_pair[0]])
+            entry_set_b = set(self.prop2entries[prop_pair[1]])
+            if len(entry_set_a) == 0:
+                ltl = LTLCreator.CreateLTLForSingleProp(prop_pair[0].name,stay_there_formula)
+                if ltl not in self.LTL_formula_list:
+                    self.LTL_formula_list.append(ltl)
+            elif len(entry_set_b) == 0:
+                ltl = LTLCreator.CreateLTLForSingleProp(prop_pair[1].name,stay_there_formula)
+                if ltl not in self.LTL_formula_list:
+                    self.LTL_formula_list.append(ltl)
+            else:
+                if (len(entry_set_a.intersection(entry_set_b)) == 0):
+                    ltl = LTLCreator.CreateLTLForDoubleProp(prop_pair[0].name, prop_pair[1].name, stay_there_formula)
+                    self.LTL_formula_list.append(ltl)
+    
+    @staticmethod
+    def CreateLTLForSingleProp (prop_name, stay_there_formula):
+        if prop_name == "_move":
+            return "[]({})".format(stay_there_formula)
+        else:
+            return "[]!s.{}".format(prop_name)
+
+    @staticmethod
+    def CreateLTLForDoubleProp (prop_name_a, prop_name_b, stay_there_formula):
+        if prop_name_a == "_move":
+            return "[](s.{} -> {})".format(prop_name_b,stay_there_formula)
+        elif prop_name_b == "_move":
+            return "[](s.{} -> {})".format(prop_name_a,stay_there_formula)
+        else:
+            return "[]!(s.{} & s.{})".format(prop_name_a, prop_name_b)
 
 
 if __name__ == "__main__":
