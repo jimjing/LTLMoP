@@ -17,6 +17,7 @@ import pdb
 
 class AprilPoseHandler():
 
+    stale_data_time = 1 
     start_time = None
     robotTagNumber = None
     tagPoses = {} # last recorded pose; (x,y,thetaRadians)
@@ -43,11 +44,10 @@ class AprilPoseHandler():
             # Extract data from the topic:
             for detection in data.detections:
                 tagId = detection.id
-                tags_seen.append(tagId)
                 poseStamped = detection.pose
                 time_seconds = poseStamped.header.stamp.to_sec()
                 #nsecs = data.header.stamp.nsecs
-                self.tagTimestamps[tagId] = time_seconds - self.start_time
+                self.tagTimestamps[tagId] = time_seconds
                 q = poseStamped.pose.orientation  # get quaternion
                 eulers_rad = euler_from_quaternion([q.x, q.y, q.z, q.w])
                 thetaRad = eulers_rad[2]
@@ -67,13 +67,19 @@ class AprilPoseHandler():
     #         self.pose = (p.x, p.y, thetaRad)
     #         #rospy.loginfo(rospy.get_caller_id() + "\nQuaternion:\n%s\nEulers:\n%s\n", str(q), str(eulers_deg))
 
-    def get_pose(self, tagId=None):
+    def getPose(self, tagId=None):
         ''' Returns the pose of the specified tag.  If no tag is specified,
         returns the pose of the robot tag.  '''
         if tagId is None:
             tagId = self.robotTagNumber
         if self.tagPoses.has_key(tagId):
-            return self.tagPoses[tagId]
+            # if the data has not been updated recently, return (0, 0, 0)
+            now = rospy.get_rostime()
+            now = now.to_sec()
+            if now - self.tagTimestamps[tagId] > self.stale_data_time:
+                return (0, 0, 0)
+            else:
+                return self.tagPoses[tagId]
         else:
             return None
 
