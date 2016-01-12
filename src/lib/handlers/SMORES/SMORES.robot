@@ -1,8 +1,8 @@
 DriveHandler: # Robot default drive handler with default argument values
-share.Drive.BipedalDriveHandler()
+share.Drive.DifferentialDriveHandler()
 
 InitHandler: # Robot default init handler with default argument values
-SMORES.SMORESInitHandler(ip='nao.local',port=9559)
+SMORES.SMORESInitHandler(smores_lib_path="/home/jim/Embedded/ecosystem/smores_build/smores_reconfig/python/SmoresModule", module_id=1)
 
 LocomotionCommandHandler: # Robot default locomotion command handler with default argument values
 SMORES.SMORESLocomotionCommandHandler()
@@ -11,7 +11,8 @@ MotionControlHandler: # Robot default motion control handler with default argume
 share.MotionControl.VectorControllerHandler()
 
 PoseHandler: # Robot default pose handler with default argument values
-share.Pose.ViconPoseHandler(host='10.0.0.102',port=800,x_VICON_name="Nao:Nao <t-X>",y_VICON_name="Nao:Nao <t-Y>",theta_VICON_name="Nao:Nao <a-Z>")
+
+share.Pose.AprilPoseHandler(111)
 
 RobotName: # Robot Name
 MODASL

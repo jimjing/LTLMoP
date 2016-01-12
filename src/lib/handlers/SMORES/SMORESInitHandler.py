@@ -6,16 +6,21 @@ SMORESInitHandler.py - SMORES Initialization Handler
 """
 
 import lib.handlers.handlerTemplates as handlerTemplates
-from MissionPlayer import MissionPlayer
+
 
 class SMORESInitHandler(handlerTemplates.InitHandler):
-    def __init__(self, executor, behavior_dir):
+    def __init__(self, executor, smores_lib_path, module_id):
         """
         Initialization handler for SMORES robot.
 
-        behavior_dir (string): The directory where all behaviors are saved (default="behaviors")
+        smores_lib_path (string): The directory where the SmoresModule library exists
+        module_id (int): The id of the module (default=1)
         """
-        self.mission_player = MissionPlayer(behavior_dir)
+        import sys
+        sys.path.append(smores_lib_path)
+        from SmoresModule import SmoresModule
+
+        self.module = SmoresModule.SmoresModule(module_id)
 
     def getSharedData(self):
         return {'SMORES_INIT_HANDLER': self}
