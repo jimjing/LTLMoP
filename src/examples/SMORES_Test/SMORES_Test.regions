@@ -1,0 +1,156 @@
+# This is a region definition file for the LTLMoP toolkit.
+# Format details are described at the beginning of each section below.
+# Note that all values are separated by *tabs*.
+
+Background: # Relative path of background image file
+None
+
+CalibrationPoints: # Vertices to use for map calibration: (vertex_region_name, vertex_index)
+boundary	0
+boundary	1
+boundary	2
+
+Obstacles: # Names of regions to treat as obstacles
+
+Regions: # Stored as JSON string
+[
+    {
+        "name": "boundary", 
+        "color": [
+            0, 
+            0, 
+            255
+        ], 
+        "holeList": [], 
+        "height": 0.0, 
+        "points": [
+            [
+                0.0, 
+                1.0
+            ], 
+            [
+                946.0, 
+                0.0
+            ], 
+            [
+                952.0, 
+                575.0
+            ], 
+            [
+                0.0, 
+                578.0
+            ]
+        ], 
+        "position": [
+            184.0, 
+            98.0
+        ], 
+        "type": "poly", 
+        "size": [
+            952.0, 
+            578.0
+        ]
+    }, 
+    {
+        "name": "r3", 
+        "color": [
+            255, 
+            255, 
+            0
+        ], 
+        "holeList": [], 
+        "height": 0, 
+        "points": [
+            [
+                0.0, 
+                0.0
+            ], 
+            [
+                257.0, 
+                65.0
+            ], 
+            [
+                14.0, 
+                103.0
+            ]
+        ], 
+        "position": [
+            492.0, 
+            467.0
+        ], 
+        "type": "poly", 
+        "size": [
+            257.0, 
+            103.0
+        ]
+    }, 
+    {
+        "name": "r2", 
+        "color": [
+            0, 
+            0, 
+            255
+        ], 
+        "holeList": [], 
+        "height": 0, 
+        "points": [
+            [
+                47.0, 
+                0.0
+            ], 
+            [
+                259.0, 
+                156.0
+            ], 
+            [
+                0.0, 
+                220.0
+            ]
+        ], 
+        "position": [
+            753.0, 
+            188.0
+        ], 
+        "type": "poly", 
+        "size": [
+            259.0, 
+            220.0
+        ]
+    }, 
+    {
+        "name": "r1", 
+        "color": [
+            255, 
+            0, 
+            0
+        ], 
+        "holeList": [], 
+        "height": 0, 
+        "points": [
+            [
+                0.0, 
+                0.0
+            ], 
+            [
+                216.0, 
+                60.0
+            ], 
+            [
+                95.0, 
+                280.0
+            ]
+        ], 
+        "position": [
+            310.0, 
+            148.0
+        ], 
+        "type": "poly", 
+        "size": [
+            216.0, 
+            280.0
+        ]
+    }
+]
+
+Transitions: # Region 1 Name, Region 2 Name, Bidirectional transition faces (face1_x1, face1_y1, face1_x2, face1_y2, face2_x1, ...)
+
