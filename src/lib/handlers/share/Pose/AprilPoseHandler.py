@@ -14,8 +14,10 @@ import time
 import sys
 sys.path.insert(0, '/home/tarik/Embedded/ecosystem/smores_build/smores_reconfig/python')
 import pdb
+# LTLMoP imports:
+import lib.handlers.handlerTemplates as handlerTemplates
 
-class AprilPoseHandler():
+class AprilPoseHandler(handlerTemplates.PoseHandler):
 
     stale_data_time = 1 
     start_time = None
@@ -23,8 +25,12 @@ class AprilPoseHandler():
     tagPoses = {} # last recorded pose; (x,y,thetaRadians)
     tagTimestamps = {} # last recorded timestamp of each tag
     #
-    def __init__(self, robotTagNumber):
-        ''' Constructor. robotTagNumber is the apriltag number attached to the robot. '''
+    def __init__(self, executor, shared_data, robotTagNumber):
+        ''' 
+	Constructor. robotTagNumber is the apriltag number attached to the robot. 
+
+	robotTagNumber (int): The April Tag number of the robot
+        '''
         rospy.init_node('april_listener', anonymous=True)
         self.sub = rospy.Subscriber("tag_detections", AprilTagDetectionArray, self.callback)
         now = rospy.get_rostime()
@@ -67,7 +73,7 @@ class AprilPoseHandler():
     #         self.pose = (p.x, p.y, thetaRad)
     #         #rospy.loginfo(rospy.get_caller_id() + "\nQuaternion:\n%s\nEulers:\n%s\n", str(q), str(eulers_deg))
 
-    def getPose(self, tagId=None):
+    def getPose(self, cached=False, tagId=None):
         ''' Returns the pose of the specified tag.  If no tag is specified,
         returns the pose of the robot tag.  '''
         if tagId is None:

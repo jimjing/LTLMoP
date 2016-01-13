@@ -11,8 +11,7 @@ MotionControlHandler: # Robot default motion control handler with default argume
 share.MotionControl.VectorControllerHandler()
 
 PoseHandler: # Robot default pose handler with default argument values
-
-share.Pose.AprilPoseHandler(111)
+share.Pose.AprilPoseHandler(robotTagNumber=111)
 
 RobotName: # Robot Name
 MODASL

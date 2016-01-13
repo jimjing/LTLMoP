@@ -5,6 +5,7 @@ SMORESLocomotionCommand.py - SMORES Locomotion Command Handler
 ==================================================================
 """
 
+import time
 import lib.handlers.handlerTemplates as handlerTemplates
 
 class SMORESLocomotionCommandHandler(handlerTemplates.LocomotionCommandHandler):
@@ -19,6 +20,17 @@ class SMORESLocomotionCommandHandler(handlerTemplates.LocomotionCommandHandler):
         """
         Run the given behavior
         """
-        print (cmd[0]+cmd[1])
-        self.SMORESInitHandler.modules.move.send_torque("left", cmd[0]+cmd[1])
-        self.SMORESInitHandler.modules.move.send_torque("right", cmd[0]-cmd[1])
+	omegaScale = 100
+	vScale = 100
+	lDir = 1
+	rDir = -1 #right is flipped relative driving direction
+
+	omegaVal = omegaScale * cmd[1]
+	vVal = vScale * cmd[0]
+	leftVal = vVal + omegaVal
+	rightVal = vVal - omegaVal	
+        print ('left: '+str(leftVal) + ' right: '+str(rightVal))
+        self.SMORESInitHandler.module.move.send_torque("left", lDir*leftVal)
+	time.sleep(0.05)
+        self.SMORESInitHandler.module.move.send_torque("right", rDir*rightVal)
+	time.sleep(0.05)
