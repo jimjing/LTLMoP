@@ -30,12 +30,12 @@ class MissionPlayer():
         'right': -1,
         'pan': -1
     }
-    numRepeats = 3 
+    numRepeats = 4 
     sendInterval = 0.005
 
-    speed_scale = 0.5   
+    #speed_scale = 0.5   
 
-    def __init__(self, dirname, debugMode=True):
+    def __init__(self, dirname, debugMode=False):
         ''' constructor '''
         # If we're running in debug mode, we don't send commands to any modules.
         self.debugMode = debugMode
@@ -44,9 +44,11 @@ class MissionPlayer():
         sys.path.insert(0, self.configurations_dir+'/'+dirname)
         import config
         MissionPlayer.config = config
+        self.speed_scale = self.config.speed_scale
         # ModuleMap maps module names from the simulator to actual hardware module numbers.
         self.ModuleMap = self.config.ModuleMap 
         self.NeutralPositions = self.config.NeutralPositions
+        self.disabledDof = self.config.disabledDof #These DoF will not move
         self.behaviorFiles = self.config.behaviorFiles
 
         # Parse all behaviors and store in a dict:
@@ -64,12 +66,21 @@ class MissionPlayer():
             self.c = SmoresCluster.SmoresCluster(self.ModuleMap.values())
             # verify cluster is on by requesting battery states:
             print('Battery voltages:')
-            for n in self.c.mods.keys():
-                m = self.c.mods[n]
-                if n is 20:
-                    continue # hack
-                voltage = m.req.requestBatteryCondition(True)
-                print( str(n) + ': ' + str(voltage) )
+            moduleList = self.c.mods.keys()
+            repeat=True
+            while repeat:
+                repeat=False
+                for n in self.c.mods.keys():
+                    m = self.c.mods[n]
+                    if n is 20:
+                        continue # hack
+                    try:
+                        voltage = m.req.requestBatteryCondition(True)
+                        print( str(n) + ': ' + str(voltage) )
+                        moduleList.remove(n)
+                    except:
+                        raw_input( 'Module '+str(n) + ' failed, restart it and press enter.')
+                        repeat=True
 
     ###### Functions for cluster management:
     def allMagnets(self, state):
@@ -77,7 +88,7 @@ class MissionPlayer():
         if self.debugMode:
             return
         for m in self.c.mods.values():
-            for face in ['stop', 'bottom']:
+            for face in ['top', 'bottom']:
                 m.mag.control(face, state)
 
     def reset(self):
@@ -90,6 +101,14 @@ class MissionPlayer():
                 p = self.NeutralPositions[moduleName][dofName]
                 m.move.command_position(dofName, p, 3)
 
+    def motorsOff(self):
+        ''' Sends zero torque to all modules. '''
+        for moduleName in self.ModuleMap.keys():
+            moduleNumber = self.ModuleMap[moduleName]
+            m = self.c.mods[moduleNumber]
+            # send each DoF in the neutral positions dict to neutral position:
+            for dofName in self.NeutralPositions[moduleName].keys():
+                m.move.send_torque(dofName, 0)
 
     ###### Functions for playing behaviors:
     def parseSimulatorXML(self, fileName=None):
@@ -125,6 +144,7 @@ class MissionPlayer():
         behaviorList = self.parsed_behaviors[behaviorName]
         for repeat in xrange(repeats):
             for i,robotState in enumerate(behaviorList):
+                raw_input('enter for next state...')
                 self.allMagnets('on')
                 print('State ' + str(i))
                 maxDuration = 0.0 # duration of command in this state
@@ -139,6 +159,8 @@ class MissionPlayer():
 
     def sendModuleCommand(self, moduleNumber, dofName, command):
         ''' Sends commands to a module based on moduleState dict passed in. '''
+        if dofName in self.disabledDof:
+            return # don't move the disabled DoF.
         commandType   = command['commandType']
         periodSeconds = command['period']
         targetValue   = command['targetValue']
@@ -167,16 +189,16 @@ if __name__ == '__main__':
     #sys.path.insert(0, dirname)
     #import config
     #MissionPlayer.config = config
-    p = MissionPlayer(dirname, debugMode=True)
-    raw_input('Enter for LowDrive...')
-    p.playBehavior('LowDrive')
-    raw_input('enter for standup...')
-    p.playBehavior('StandUp.xml')
-    raw_input('Enter for StandDrive...')
-    p.playBehavior('StandDrive.xml')
-    raw_input('Enter for sitdown...')
-    p.playBehavior('SitDown.xml')
-    #s.playBehavior()
+    p = MissionPlayer(dirname)
+    # raw_input('Enter for LowDrive...')
+    # p.playBehavior('LowDrive')
+    # raw_input('enter for standup...')
+    # p.playBehavior('StandUp.xml')
+    # raw_input('Enter for StandDrive...')
+    # p.playBehavior('StandDrive.xml')
+    # raw_input('Enter for sitdown...')
+    # p.playBehavior('SitDown.xml')
+    # #s.playBehavior()
 
 
 
