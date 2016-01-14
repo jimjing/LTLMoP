@@ -79,8 +79,8 @@ class MissionPlayer():
                         print( str(n) + ': ' + str(voltage) )
                         moduleList.remove(n)
                     except:
-                        raw_input( 'Module '+str(n) + ' failed, restart it and press enter.')
-                        repeat=True
+                        print( 'Module '+str(n) + ' did not respond!')
+                        #repeat=True
 
     ###### Functions for cluster management:
     def allMagnets(self, state):

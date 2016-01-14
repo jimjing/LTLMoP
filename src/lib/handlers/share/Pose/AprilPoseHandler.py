@@ -18,7 +18,7 @@ import pdb
 import lib.handlers.handlerTemplates as handlerTemplates
 
 class AprilPoseHandler(handlerTemplates.PoseHandler):
-
+#class AprilPoseHandler():
     stale_data_time = 1 
     start_time = None
     robotTagNumber = None
@@ -91,7 +91,7 @@ class AprilPoseHandler(handlerTemplates.PoseHandler):
 
 
 if __name__ == '__main__':
-    P = AprilPoseHandler(0)
+    P = AprilPoseHandler(None, None, 0)
     #start = time.time()
     #while time.time()-start < 10:
     #    time.sleep(0.5)

@@ -41,10 +41,18 @@ class SMORESSensorHandler(handlerTemplates.SensorHandler):
 
         tagNumber (int): The number of the tag
         """
-        THRESHOLD = 1
+        THRESHOLD = 0.25
         if initial:
             pass # no initialization necessary for this function
         else:
             robotPose = self.AprilPoseHandler.getPose()
-            tagPose   = self.AprilPoseHandler.getPose(tagNumber)
-            return self._distance(robotPose, tagPose) < THRESHOLD 
+            tagPose   = self.AprilPoseHandler.getPose(False, tagNumber)
+            #print( 'robotPose: ' + str(robotPose))
+            if not tagPose:
+                    return False # if AprilPoseHandler hasn't seen the tag, don't trigger
+            if tagPose[0] == 0 and tagPose[1] == 0:
+                return False
+            #print( 'tagPose: ' + str(tagPose))
+            d = self._distance(robotPose, tagPose)
+            #print( str(tagNumber) + ": " + str(d) )
+            return d < THRESHOLD 

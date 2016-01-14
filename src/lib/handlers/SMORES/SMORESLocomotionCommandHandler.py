@@ -20,17 +20,17 @@ class SMORESLocomotionCommandHandler(handlerTemplates.LocomotionCommandHandler):
         """
         Run the given behavior
         """
-	omegaScale = 100
-	vScale = 100
-	lDir = 1
-	rDir = -1 #right is flipped relative driving direction
+        omegaScale = 100
+        vScale = 200
+        lDir = 1
+        rDir = -1 #right is flipped relative driving direction
 
-	omegaVal = omegaScale * cmd[1]
-	vVal = vScale * cmd[0]
-	leftVal = vVal + omegaVal
-	rightVal = vVal - omegaVal	
-        print ('left: '+str(leftVal) + ' right: '+str(rightVal))
-        self.SMORESInitHandler.module.move.send_torque("left", lDir*leftVal)
-	time.sleep(0.05)
-        self.SMORESInitHandler.module.move.send_torque("right", rDir*rightVal)
-	time.sleep(0.05)
+        omegaVal = omegaScale * cmd[1]
+        vVal = vScale * cmd[0]
+        leftVal = vVal + omegaVal
+        rightVal = vVal - omegaVal  
+        #print ('left: '+str(leftVal) + ' right: '+str(rightVal))
+        self.SMORESInitHandler.drivingModule.move.send_torque("left", lDir*leftVal)
+        time.sleep(0.05)
+        self.SMORESInitHandler.drivingModule.move.send_torque("right", rDir*rightVal)
+        time.sleep(0.05)

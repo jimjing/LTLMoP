@@ -20,7 +20,7 @@ fastslow: True
 decompose: True
 
 CurrentConfigName:
-sim
+SMORES
 
 Customs: # List of custom propositions
 loc1visited
@@ -37,24 +37,24 @@ trash, 1
 ======== SPECIFICATION ========
 
 RegionMapping: # Mapping between region names and their decomposed counterparts
-loc2 = p8
-dock = p10
-loc1 = p9
-others = p11, p12, p13, p14
+loc2 = p15, p16
+dock = p7
+loc1 = p5
+others = p8, p9, p10, p11, p12
+ground = p13, p14
 
 Spec: # Specification in structured English
-Robot starts in dock with undock
+Robot starts false
 
-if you are sensing cup and you were in loc1 or loc2 then do spin
-if you are sensing trash and you were in loc1 or loc2 then do push
-
-if you are activating spin or push then stay there
-infinitely often not (cup or trash)
+if you are sensing cup  then do spin
+if you are sensing trash then do push
 
 loc1visited is set on loc1 and reset on false
 loc2visited is set on loc2 and reset on false
 
 do docking if and only if you were in dock and you are activating (loc1visited and loc2visited)
+
+do undock if and only if you were in dock and you are not activating (loc1visited or loc2visited)
 
 infinitely often do docking
 
