@@ -8,6 +8,7 @@ Actions: # List of action propositions and their state (enabled = 1, disabled = 
 push, 1
 spin, 1
 docking, 1
+undock, 1
 
 CompileOptions:
 convexify: True
@@ -42,7 +43,7 @@ loc1 = p9
 others = p11, p12, p13, p14
 
 Spec: # Specification in structured English
-Robot starts in dock
+Robot starts in dock with undock
 
 if you are sensing cup and you were in loc1 or loc2 then do spin
 if you are sensing trash and you were in loc1 or loc2 then do push
