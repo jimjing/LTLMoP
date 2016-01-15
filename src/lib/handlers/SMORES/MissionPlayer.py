@@ -144,7 +144,7 @@ class MissionPlayer():
         behaviorList = self.parsed_behaviors[behaviorName]
         for repeat in xrange(repeats):
             for i,robotState in enumerate(behaviorList):
-                raw_input('enter for next state...')
+                #raw_input('enter for next state...')
                 self.allMagnets('on')
                 print('State ' + str(i))
                 maxDuration = 0.0 # duration of command in this state

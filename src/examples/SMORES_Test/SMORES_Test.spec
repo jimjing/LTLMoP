@@ -9,6 +9,8 @@ push, 1
 spin, 1
 docking, 1
 undock, 1
+climbup, 1
+climbdown, 1
 
 CompileOptions:
 convexify: True
@@ -55,6 +57,10 @@ loc2visited is set on loc2 and reset on false
 do docking if and only if you were in dock and you are activating (loc1visited and loc2visited)
 
 do undock if and only if you were in dock and you are not activating (loc1visited or loc2visited)
+
+do climbdown if and only if you were in dock and you activated  (loc1visited and loc2visited)
+
+do climbup if and only if you were in ground and you are not activating (loc1visited or loc2visited)
 
 infinitely often do docking
 

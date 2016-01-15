@@ -21,7 +21,7 @@ class SMORESInitHandler(handlerTemplates.InitHandler):
         #
         # Create a MissionPlayer object to send behaviors:
         import MissionPlayer
-        self.MissionPlayer = MissionPlayer.MissionPlayer('test')  
+        self.MissionPlayer = MissionPlayer.MissionPlayer('peekaboo7')  
         # Give LTLMoP access to one of the modules for diff drive (this is a hack):
         drivingModuleNumber = 12 
         dockingModuleNumber = 11

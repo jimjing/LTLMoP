@@ -8,6 +8,7 @@ SMORESActuator.py - SMORES Actuator Handler
 import lib.handlers.handlerTemplates as handlerTemplates
 #
 import time
+from numpy import pi
 #
 class SMORESActuatorHandler(handlerTemplates.ActuatorHandler):
     speed = 60 #drive speed
@@ -113,6 +114,12 @@ class SMORESActuatorHandler(handlerTemplates.ActuatorHandler):
         else:
             m = self.SMORESInitHandler.drivingModule
             d = self.SMORESInitHandler.dockingModule
+            # tilt back down to zero, and tilt d up by 10:
+            for i in xrange(numRepeats):
+                m.move.command_position('tilt', 0, 1)
+                d.move.command_position('tilt', 15*pi/180, 1)
+                time.sleep(0.05)
+            time.sleep(1)
             # turn on magnets:
             for i in xrange(numRepeats):
                 m.mag.control('top', 'on')
@@ -153,6 +160,10 @@ class SMORESActuatorHandler(handlerTemplates.ActuatorHandler):
                 m.mag.control('top', 'off')
                 d.mag.control('top', 'off')
             time.sleep(0.5)
+            # tilt up:
+            for i in xrange(numRepeats):
+                m.move.command_position('tilt', 20*pi/180, 1)
+                time.sleep(0.05)
             # drive backward:
             for i in xrange(numRepeats):
                 m.move.command_velocity('right', -self.rd*self.speed, 2)
