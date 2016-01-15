@@ -190,15 +190,7 @@ if __name__ == '__main__':
     #import config
     #MissionPlayer.config = config
     p = MissionPlayer(dirname)
-    # raw_input('Enter for LowDrive...')
-    # p.playBehavior('LowDrive')
-    # raw_input('enter for standup...')
-    # p.playBehavior('StandUp.xml')
-    # raw_input('Enter for StandDrive...')
-    # p.playBehavior('StandDrive.xml')
-    # raw_input('Enter for sitdown...')
-    # p.playBehavior('SitDown.xml')
-    # #s.playBehavior()
+    
 
 
 

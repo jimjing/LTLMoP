@@ -39,6 +39,76 @@ class SMORESActuatorHandler(handlerTemplates.ActuatorHandler):
         else:
             self.SMORESInitHandler.MissionPlayer.playBehavior(behavior_name)
 
+    ####
+
+    def pickUp4holo(self, actuatorVal, intial=False):
+        """
+        Commands 4holo robot to sit down, drive under the box, and pick it up.
+        """
+        if not actuatorVal:
+            return
+        if initial:
+            pass
+        else:
+            # sit down:
+            print "Sit down"
+            self.SMORESInitHandler.MissionPlayer.playBehavior('SitDown')
+            # LowDriveForward:
+            print('LowDriveForward')
+            self.SMORESInitHandler.MissionPlayer.playBehavior('LowDriveForward')
+            # Standup
+            print('StandUp')
+            self.SMORESInitHandler.MissionPlayer.playBehavior('StandUp')
+
+    def moveBox4holo(self, actuatorVal, intial=False):
+        """
+        Commands 4holo robot to drive with the box, put it down, back up, and stand up 
+        """
+        if not actuatorVal:
+            return
+        if initial:
+            pass
+        else:
+            # Stand Up:
+            print "StandUp"
+            self.SMORESInitHandler.MissionPlayer.playBehavior('StandUp')
+            # TurnForward:
+            print('TurnForward')
+            self.SMORESInitHandler.MissionPlayer.playBehavior('TurnForward')
+            # HighDriveForward
+            print('HighDriveForward')
+            self.SMORESInitHandler.MissionPlayer.playBehavior('HighDriveForward')
+            # TurnNeutral:
+            print "TurnNeutral"
+            self.SMORESInitHandler.MissionPlayer.playBehavior('TurnNeutral')
+            # SitDown:
+            print('SitDown')
+            self.SMORESInitHandler.MissionPlayer.playBehavior('SitDown')
+            # LowDriveBackward 
+            print('LowDriveBackward')
+            self.SMORESInitHandler.MissionPlayer.playBehavior('LowDriveBackward')
+            # Stand Up:
+            print "StandUp"
+            self.SMORESInitHandler.MissionPlayer.playBehavior('StandUp')
+
+    def driveToDock4holo(self, actuatorVal, intial=False):
+        """
+        Commands 4holo robot to drive with the box, put it down, back up, and stand up 
+        """
+        if not actuatorVal:
+            return
+        if initial:
+            pass
+        else:
+            # TurnLeft:
+            print "TurnLeft"
+            self.SMORESInitHandler.MissionPlayer.playBehavior('TurnLeft')
+            # HighDriveLeft:
+            print('HighDriveLeft')
+            self.SMORESInitHandler.MissionPlayer.playBehavior('HighDriveLeft')
+
+    ####
+
     def oneModulePush(self, actuatorVal, initial=False):
         '''
         make a single module push forward for 2 seconds, then pull back

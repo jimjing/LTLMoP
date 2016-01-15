@@ -9,9 +9,9 @@ import lib.handlers.handlerTemplates as handlerTemplates
 ### Other imports:
 from math import sqrt
 # Import AprilPoseHandler to get access to the apriltag info:
-# import sys
-# sys.path.insert(0, '../share/pose')
-# import AprilPoseHandler
+import sys
+sys.path.insert(0, '../share/pose')
+import AprilPoseHandler
 
 class SMORESSensorHandler(handlerTemplates.SensorHandler):
     '''
@@ -23,8 +23,8 @@ class SMORESSensorHandler(handlerTemplates.SensorHandler):
         Sensor handler for SMORES robot.
         """
         self.SMORESInitHandler = shared_data['SMORES_INIT_HANDLER']
-        self.AprilPoseHandler = executor.hsub.getHandlerInstanceByType(handlerTemplates.PoseHandler)
-        #self.AprilPoseHandler = AprilPoseHandler.AprilPoseHandler(tag['robot'])
+        #self.AprilPoseHandler = executor.hsub.getHandlerInstanceByType(handlerTemplates.PoseHandler)
+        self.AprilPoseHandler = AprilPoseHandler.AprilPoseHandler(0)
     def _distance(self, pose1, pose2):
         ''' Distance function for two (x,y,theta) poses. '''
         dx = pose1[0] - pose2[0]
@@ -34,6 +34,18 @@ class SMORESSensorHandler(handlerTemplates.SensorHandler):
     ###################################
     ### Available sensor functions: ###
     ###################################
+
+    def isTagPresent(self, tagNumber, initial=False):
+        '''
+        Returns True if tag is present, False otherwise
+        '''
+        tagPose   = self.AprilPoseHandler.getPose(False, tagNumber)
+        if not tagPose:
+            return False # this means the tag has never been seen.
+        elif tagPose[0] == 0 and tagPose[1] == 0:
+            return False # this means the tag has been seen, but isn't seen now.
+        else:
+            return True
 
     def isNearTag(self, tagNumber, initial=False):
         """
@@ -49,7 +61,7 @@ class SMORESSensorHandler(handlerTemplates.SensorHandler):
             tagPose   = self.AprilPoseHandler.getPose(False, tagNumber)
             #print( 'robotPose: ' + str(robotPose))
             if not tagPose:
-                    return False # if AprilPoseHandler hasn't seen the tag, don't trigger
+                return False # if AprilPoseHandler hasn't seen the tag, don't trigger
             if tagPose[0] == 0 and tagPose[1] == 0:
                 return False
             #print( 'tagPose: ' + str(tagPose))
