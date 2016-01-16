@@ -41,7 +41,7 @@ class SMORESActuatorHandler(handlerTemplates.ActuatorHandler):
 
     ####
 
-    def pickUp4holo(self, actuatorVal, intial=False):
+    def pickUp4holo(self, actuatorVal, initial=False):
         """
         Commands 4holo robot to sit down, drive under the box, and pick it up.
         """
@@ -60,7 +60,7 @@ class SMORESActuatorHandler(handlerTemplates.ActuatorHandler):
             print('StandUp')
             self.SMORESInitHandler.MissionPlayer.playBehavior('StandUp')
 
-    def moveBox4holo(self, actuatorVal, intial=False):
+    def moveBox4holo(self, actuatorVal, initial=False):
         """
         Commands 4holo robot to drive with the box, put it down, back up, and stand up 
         """
@@ -69,9 +69,6 @@ class SMORESActuatorHandler(handlerTemplates.ActuatorHandler):
         if initial:
             pass
         else:
-            # Stand Up:
-            print "StandUp"
-            self.SMORESInitHandler.MissionPlayer.playBehavior('StandUp')
             # TurnForward:
             print('TurnForward')
             self.SMORESInitHandler.MissionPlayer.playBehavior('TurnForward')
@@ -91,7 +88,7 @@ class SMORESActuatorHandler(handlerTemplates.ActuatorHandler):
             print "StandUp"
             self.SMORESInitHandler.MissionPlayer.playBehavior('StandUp')
 
-    def driveToDock4holo(self, actuatorVal, intial=False):
+    def driveToDock4holo(self, actuatorVal, initial=False):
         """
         Commands 4holo robot to drive with the box, put it down, back up, and stand up 
         """

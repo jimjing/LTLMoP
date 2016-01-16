@@ -168,7 +168,7 @@ class MissionPlayer():
             # for position commands, targetValue is the desired position
             # in degrees.  Convert to radians before sending:
             positionRadians = targetValue * (pi/180.0)
-            print(str(moduleNumber)+ ', ' + dofName + ', pos: ' + str(positionRadians) + ', ' + str(periodSeconds) )
+            #print(str(moduleNumber)+ ', ' + dofName + ', pos: ' + str(positionRadians) + ', ' + str(periodSeconds) )
             if not (dofName == 'right' or dofName== 'left'): # skip for left and right:
                 for i in xrange(self.numRepeats):
                     if not self.debugMode:
@@ -178,7 +178,7 @@ class MissionPlayer():
             # for velocity commands, targetValue is desired velocity in 
             # degrees/sec.  Convert to PWM:
             velocityPWM = int((targetValue/90.0)*100) * self.speed_scale
-            print(str(moduleNumber)+ ', ' + dofName + ', vel: ' + str(velocityPWM) + ', ' + str(periodSeconds))
+            #print(str(moduleNumber)+ ', ' + dofName + ', vel: ' + str(velocityPWM) + ', ' + str(periodSeconds))
             for i in xrange(self.numRepeats):
                 if not self.debugMode:
                     self.c.mods[moduleNumber].move.command_velocity(dofName, velocityPWM, periodSeconds)

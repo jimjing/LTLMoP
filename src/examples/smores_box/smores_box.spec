@@ -15,11 +15,11 @@ parser: structured
 symbolic: False
 use_region_bit_encoding: True
 synthesizer: jtlv
-fastslow: False
+fastslow: True
 decompose: True
 
 CurrentConfigName:
-sim
+sim_smore
 
 Customs: # List of custom propositions
 carry
@@ -35,10 +35,10 @@ box, 1
 ======== SPECIFICATION ========
 
 RegionMapping: # Mapping between region names and their decomposed counterparts
-others = 
+r3 = p1
 r1 = p3
 r2 = p2
-r3 = p1
+others = 
 
 Spec: # Specification in structured English
 carry is set on pickup and reset on false
@@ -47,8 +47,4 @@ dropped is set on drop and reset on false
 do pickup if and only if you were sensing box and you are not activating carry
 do dock if and only if you are activating dropped
 do drop if and only if you were activating carry and you are not activating dropped
-
-visit r1
-visit r2
-visit r3
 

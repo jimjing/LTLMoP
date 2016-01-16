@@ -15,10 +15,10 @@ import sys
 sys.path.insert(0, '/home/tarik/Embedded/ecosystem/smores_build/smores_reconfig/python')
 import pdb
 # LTLMoP imports:
-import lib.handlers.handlerTemplates as handlerTemplates
+#import lib.handlers.handlerTemplates as handlerTemplates
 
-class AprilPoseHandler(handlerTemplates.PoseHandler):
-#class AprilPoseHandler():
+#class AprilPoseHandler(handlerTemplates.PoseHandler):
+class AprilPoseHandler():
     stale_data_time = 1 
     start_time = None
     robotTagNumber = None
