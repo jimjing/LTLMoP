@@ -72,7 +72,7 @@ class MissionPlayer():
                 repeat=False
                 for n in self.c.mods.keys():
                     m = self.c.mods[n]
-                    if n is 20:
+                    if n >= 20:
                         continue # hack
                     try:
                         voltage = m.req.requestBatteryCondition(True)
@@ -88,7 +88,7 @@ class MissionPlayer():
         if self.debugMode:
             return
         for m in self.c.mods.values():
-            for face in ['top', 'bottom']:
+            for face in ['top', 'bottom', 'left', 'right']:
                 m.mag.control(face, state)
 
     def reset(self):
