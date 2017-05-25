@@ -26,6 +26,7 @@ def setupLogging(loggerLevel=None):
         def __init__(self, *args, **kwds):
             super(ColorLogFormatter, self).__init__(*args, **kwds)
             self.plain_formatter = logging.Formatter(" [ %(module)s ] %(message)s")
+            self.debug_formatter = logging.Formatter(" --> [%(levelname)s] (%(processName)s) (%(filename)s, line %(lineno)s): %(message)s")
             self.detailed_formatter = logging.Formatter(" --> [%(levelname)s] (%(pathname)s, line %(lineno)s): %(message)s")
 
         def colorize(self, level, string):
@@ -36,23 +37,27 @@ def setupLogging(loggerLevel=None):
 #                 # Only try to colorize if outputting to a terminal 
 #                 return string
             else:
-                colors = {'ERROR': 91, 'WARNING': 93, 'INFO': 97, 'DEBUG': 94}
+                colors = {'ERROR': 91, 'WARNING': 93, 'INFO': 97, 'DEBUG': 94, 'Level 1': 100, 'Level 2': 105, 'Level 4': 104, 'Level 6': 102, 'Level 8': 101}
                 return "\033[{0}m{1}\033[0m".format(colors[level], string)
 
         def format(self, record):
             if record.levelname == "INFO":
                 precolor = self.plain_formatter.format(record)
+            elif record.levelname == "DEBUG":
+                precolor = self.debug_formatter.format(record)
             else:
                 precolor = self.detailed_formatter.format(record)
 
             return self.colorize(record.levelname, precolor)
             
-    logger = logging.getLogger()
+    ltlmop_logger = logging.getLogger('ltlmop_logger')
+    # make sure rospy does not overwrite our logger
+    #logging.root = logging.getLogger('ltlmop_logger')
     h = logging.StreamHandler()
     f = ColorLogFormatter()
     h.setFormatter(f)
-    if not logger.handlers:
-        logger.addHandler(h)
+    if not ltlmop_logger.handlers:
+        ltlmop_logger.addHandler(h)
 
     cfg = ConfigParser.ConfigParser()
 
@@ -65,13 +70,19 @@ def setupLogging(loggerLevel=None):
 
 
     if loggerLevel == 'error':
-        logger.setLevel(logging.ERROR)
+        ltlmop_logger.setLevel(logging.ERROR)
     elif loggerLevel == 'warning':
-        logger.setLevel(logging.WARNING)
+        ltlmop_logger.setLevel(logging.WARNING)
     elif loggerLevel == 'info':
-        logger.setLevel(logging.INFO)
+        ltlmop_logger.setLevel(logging.INFO)
     elif loggerLevel == 'debug':
-        logger.setLevel(logging.DEBUG)
+        ltlmop_logger.setLevel(logging.DEBUG)
+    elif loggerLevel == 'notset':
+        #ltlmop_logger.setLevel(logging.NOTSET)
+        # for some reason logging.NOTSET does not work
+        ltlmop_logger.setLevel(int(1))
+    else:
+        ltlmop_logger.setLevel(int(loggerLevel))
 
 # Choose the timer func with maximum accuracy for given platform
 if sys.platform in ['win32', 'cygwin']:

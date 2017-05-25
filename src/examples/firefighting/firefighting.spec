@@ -11,13 +11,21 @@ radio, 1
 extinguish, 0
 
 CompileOptions:
+neighbour_robot: False
 convexify: True
 parser: structured
 symbolic: False
 use_region_bit_encoding: True
-synthesizer: jtlv
+multi_robot_mode: negotiation
+cooperative_gr1: False
 fastslow: False
+only_realizability: False
+recovery: False
+include_heading: False
+winning_livenesses: False
+synthesizer: jtlv
 decompose: True
+interactive: False
 
 CurrentConfigName:
 Basic Simulation
@@ -35,6 +43,10 @@ hazardous_item, 1
 
 
 ======== SPECIFICATION ========
+
+GlobalSensors: # Sensors accessible by all robots
+
+OtherRobot: # The other robot in the same workspace
 
 RegionMapping: # Mapping between region names and their decomposed counterparts
 living = p4

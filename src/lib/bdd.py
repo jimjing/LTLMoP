@@ -3,7 +3,10 @@ import re
 import time
 import pycudd
 import strategy
+
+# logger for ltlmop
 import logging
+ltlmop_logger = logging.getLogger('ltlmop_logger')
 
 # NOTE: This module requires a modified version of pycudd!!
 # See src/etc/patches/README_PYCUDD for instructions.
@@ -20,7 +23,7 @@ import logging
 #       - minimal Y after Z change
 
 class BDDStrategy(strategy.Strategy):
-    def __init__(self):
+    def __init__(self, add=False):
         super(BDDStrategy, self).__init__()
 
         # We will have a state collection just in order to provide a context
@@ -34,10 +37,18 @@ class BDDStrategy(strategy.Strategy):
 
         self.strat_type_var = None
 
+        # track if this is an add or bdd
+        self.add = add
+
         self.mgr = pycudd.DdManager()
         self.mgr.SetDefault()
         # TODO: why is garbage collection crashing?? :( [e.g. on firefighting]
         self.mgr.DisableGarbageCollection()
+
+        self.envTransBDD = None # for saving BDD of envTrans
+
+        #self.mgr.SetMaxMemory(-4000) #<4096
+        #print "maxMemory:" + str(self.mgr.ReadMaxMemory())
 
     def _loadFromFile(self, filename):
         """
@@ -50,20 +61,31 @@ class BDDStrategy(strategy.Strategy):
 
         a = pycudd.DdArray(1)
 
-        # Load in the actual BDD itself
-        # Note: We are using an ADD loader because the BDD loader
-        # would expect us to have a reduced BDD with only one leaf node
-        self.mgr.AddArrayLoad(pycudd.DDDMP_ROOT_MATCHLIST,
-                              None,
-                              pycudd.DDDMP_VAR_MATCHIDS,
-                              None,
-                              None,
-                              None,
-                              pycudd.DDDMP_MODE_TEXT,
-                              filename, None, a)
+        # Load in the actual BDD or ADD itself
+        if self.add:
+            # Note: We are using an ADD loader because the BDD loader
+            # would expect us to have a reduced BDD with only one leaf node
+            self.mgr.AddArrayLoad(pycudd.DDDMP_ROOT_MATCHLIST,
+                                  None,
+                                  pycudd.DDDMP_VAR_MATCHIDS,
+                                  None,
+                                  None,
+                                  None,
+                                  pycudd.DDDMP_MODE_TEXT,
+                                  filename, None, a)
 
-        # Convert from a binary (0/1) ADD to a BDD
-        self.strategy = self.mgr.addBddPattern(a[0])
+            # Convert from a binary (0/1) ADD to a BDD
+            self.strategy = self.mgr.addBddPattern(a[0])
+            ltlmop_logger.debug('ADD loaded')
+        else:
+            #try loading as BDD (input from SLUGS) instead of ADD (input from JTLV)
+            self.strategy  = self.mgr.BddLoad(pycudd.DDDMP_VAR_MATCHIDS,
+                                  None,
+                                  None,
+                                  None,
+                                  pycudd.DDDMP_MODE_TEXT,
+                                  filename, None)
+            ltlmop_logger.debug('BDD loaded')
 
         # Load in meta-data
         with open(filename, 'r') as f:
@@ -94,6 +116,7 @@ class BDDStrategy(strategy.Strategy):
                 # Rewrite proposition names to make the old bitvector system work
                 # with the new one
                 varname = re.sub(r"^bit(\d+)('?)$", r'region_b\1\2', varname)
+                varname = re.sub(r"^sbit(\d+)('?)$", r'regionCompleted_b\1\2', varname)
                 #################################################################
 
                 if varname == "strat_type":
@@ -107,7 +130,7 @@ class BDDStrategy(strategy.Strategy):
         # Create a Domain for jx to help with conversion to/from bitvectors
         self.jx_domain = strategy.Domain("_jx", value_mapping=range(self.num_goals), endianness=strategy.Domain.B0_IS_LSB)
 
-    def searchForStates(self, prop_assignments, state_list=None):
+    def searchForStates(self, prop_assignments, state_list=None, goal_id=None):
         """ Returns an iterator for the subset of all known states (or a subset
             specified in `state_list`) that satisfy `prop_assignments`. """
 
@@ -139,6 +162,11 @@ class BDDStrategy(strategy.Strategy):
     def BDDToStates(self, bdd):
         for one_sat in self.satAll(bdd, self.getAllVariableNames() + self.jx_domain.getPropositions()):
             yield self.BDDToState(one_sat)
+
+    def BDDToStatesModified(self, bdd):
+        for one_sat in self.satAll(bdd, self.getAllVariableNames() + self.jx_domain.getPropositions()):
+            if one_sat & self.strategy:
+                yield self.BDDToState(one_sat)
 
     def BDDToState(self, bdd):
         prop_assignments = self.BDDToPropAssignment(bdd, self.getAllVariableNames())
@@ -244,6 +272,7 @@ class BDDStrategy(strategy.Strategy):
         candidates = self._getNextStateBDD(from_state, prop_assignments, "Z")
         if candidates:
             candidate_states = list(self.BDDToStates(candidates))
+            #ltlmop_logger.debug('candidate_statesZ:' + str(candidate_states))
             for s in candidate_states:
                 # add 1 to jx
                 s.goal_id = (s.goal_id + 1) % self.num_goals
@@ -253,10 +282,49 @@ class BDDStrategy(strategy.Strategy):
         # If that wasn't possible, try to move closer to the current goal
         candidates = self._getNextStateBDD(from_state, prop_assignments, "Y")
         if candidates:
+            #candidate_states = list(self.BDDToStates(candidates))
+            #ltlmop_logger.debug('candidate_statesY:' + str(candidate_states))
             return list(self.BDDToStates(candidates))
 
         # If we've gotten here, something's terribly wrong
         raise RuntimeError("No next state could be found.")
+
+    def findTransitionableNextStates(self, from_state=None):
+        """ Return a list of states that can be reached from `from_state`
+            and satisfy `prop_assignments`.  If `from_state` is omitted,
+            the strategy's current state will be used. """
+
+        if from_state is None:
+            from_state = self.current_state
+
+        # Get possible valid next states
+        next_state_restrictions = self.propAssignmentToBDD(prop_assignments, use_next=True)
+        ltlmop_logger.debug('we did come and check')
+        candidates = self.unprime(self.stateToBDD(from_state)
+                                  & self.strategy
+                                  & self.envTransBDD
+                                  & next_state_restrictions)
+        ltlmop_logger.debug('we did finish')
+
+        statesToKeep = []
+        if candidates:
+            candidate_states = list(self.BDDToStates(candidates))
+            #candidate_states = list(self.BDDToStatesModified(candidates))
+            for state in candidate_states:
+                try:
+                    state.getAll()
+                    statesToKeep.append(state)
+                except:
+                    pass
+                    #ltlmop_logger.debug('State contains invalid assignments. proping state')
+                    #ltlmop_logger.debug(state.getAll(expand_domains=True))
+
+            #ltlmop_logger.debug('statesToKeep:' + str(statesToKeep))
+            return statesToKeep
+        else:
+            # If we've gotten here, something's terribly wrong
+            ltlmop_logger.error("No next state could be found.")
+            return []
 
     def _getNextStateBDD(self, from_state, prop_assignments, strat_type):
         # Explanation of the strat_type var (from JTLV code):
@@ -281,3 +349,125 @@ class BDDStrategy(strategy.Strategy):
 
     def getJxFromBDD(self, bdd):
         return self.jx_domain.propAssignmentsToNumericValue(self.BDDToPropAssignment(bdd, self.jx_domain.getPropositions()))
+
+    def evaluateBDD(self, tree, terminals, level=0, next = False, disjunction = False):
+        """
+        Evaluate the parsed tree and yell the environment assumptions violated.
+        violated_spec_line_no
+        """
+
+        final_value  = self.mgr.ReadOne()     # final value to be returned. for conjunction and disjunction operations
+        disjunction  = None
+        implication  = None
+        negate       = False
+        to_negate    = False
+        if not tree[0] in terminals or tree[0] in ('FALSE','TRUE'):
+            # check for implication (->)
+            if tree[0] =='Implication':
+                implication = True
+
+            # check for biimplication (->)
+            elif tree[0] =='Biimplication':
+                implication = False
+
+            # check for disjunction (or)
+            elif tree[0] == "Disjunction":
+                disjunction = True
+                final_value = self.mgr.ReadZero()
+
+            # check for conjunction (and)
+            elif tree[0] == "Conjunction":
+                disjunction = False
+
+            # change the negate flag
+            elif tree[0] == 'NotOperator':
+                negate = True
+
+            # change the next flag
+            elif tree[0] == 'NextOperator':
+                next = True
+
+            elif tree[0] == 'TRUE':
+                return self.mgr.ReadOne(), negate, False
+
+            elif tree[0] == 'FALSE':
+                return self.mgr.ReadZero(), negate, False
+
+            # for system propositions
+            elif "s." in tree[0]:
+                key = tree[0].replace("s.","")
+                if "bit" in key:  #HACK: will be fixed with fsa
+                    key = key.replace("bit","region_b")
+                if next == True:
+                    return self.var_name_to_BDD[key+"'"], negate, False
+                else:
+                    return self.var_name_to_BDD[key], negate, next
+
+            # for environement propositions
+            elif "e." in tree[0]:
+                key = tree[0].replace("e.","")
+                if "sbit" in key:
+                    key = key.replace("sbit","regionCompleted_b")
+                if next == True:
+                    return self.var_name_to_BDD[key+"'"], negate, False
+                else:
+                    return self.var_name_to_BDD[key], negate, next
+
+            next_in_loop   = next
+            node_count = 1
+
+            for x in tree[1:]:
+                # skip ltl that does not contain a global operator
+                if level == 0 :
+                    pass
+                value = None
+                ltlmop_logger.debug(x)
+                value, negate_in_loop, next_in_loop = self.evaluateBDD(x, terminals, level+1, next_in_loop, disjunction)
+
+                # for negating value returned in the ltl
+                if negate_in_loop == True:
+                    to_negate = True
+
+                if to_negate == True:
+                    if node_count == 2:
+                        value = ~value
+
+                # Disjunction(|)
+                if disjunction == True:
+                    final_value = final_value | value
+
+                # Conjunction(&)
+                elif disjunction == False:
+                    final_value = final_value & value
+
+                # Implication(->)
+                elif implication == True:
+                    if node_count == 1:
+                        implication_first = value
+                    else:
+                        final_value = (~implication_first | value)
+                        implication_first = None
+
+                # Biimplication (<->)
+                elif implication == False:
+                    if node_count == 1:
+                        biimplication_first = value
+                    else:
+                        # !!! changed here
+                        #final_value = biimplication_first == value
+                        final_value = (~biimplication_first | value ) & (~value | biimplication_first)
+                        biimplication_first = None
+                else:
+                    final_value = final_value & value
+
+                if level == 0:
+                    pass
+                node_count += 1
+                value = None
+
+            return final_value, negate, next
+
+        else:
+            return self.mgr.ReadOne(), negate, next
+
+

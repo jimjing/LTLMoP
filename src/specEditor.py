@@ -33,12 +33,23 @@ import strategy
 import mapRenderer
 from specCompiler import SpecCompiler
 from asyncProcesses import AsynchronousProcessThread
+from parseEnglishToLTL import writeSpec
 
 from copy import deepcopy
 
 import logging
 import globalConfig
+ltlmop_logger = logging.getLogger('ltlmop_logger')
 
+ltlmop_logger.log(1,'ltlmop_logger: Level 1. Put number 1 in global.cfg')
+ltlmop_logger.log(2,'ltlmop_logger: Level 2. Put number 2 in global.cfg')
+ltlmop_logger.log(4,'ltlmop_logger: Level 4. Put number 4 in global.cfg')
+ltlmop_logger.log(6,'ltlmop_logger: Level 6. Put number 6 in global.cfg')
+ltlmop_logger.log(8,'ltlmop_logger: Level 8. Put number 8 in global.cfg')
+ltlmop_logger.debug('ltlmop_logger: DEBUG. Put str DEBUG in global.cfg')
+ltlmop_logger.info('ltlmop_logger: INFO. Put str INFO in global.cfg')
+ltlmop_logger.warning('ltlmop_logger: WARNING. Put str WARN in global.cfg')
+ltlmop_logger.error('ltlmop_logger: ERROR. Put str ERROR in global.cfg')
 
 ######################### WARNING! ############################
 #         DO NOT EDIT GUI CODE BY HAND.  USE WXGLADE.         #
@@ -149,6 +160,80 @@ class AnalysisResultsDialog(wx.Dialog):
 
         self.Layout()
 
+    ############# ENV Assumption Mining #############
+    def populateTreeStructured(self, structuredSpec, LTL2SpecLineNumber, tracebackTree, ltlSpec , to_highlight):
+        """
+        structuredSpec: each line of spec in structured English in type LIST
+        LTL2SpecLineNumber: dict for mapping bt structured English and LTL
+        tracebackTree        : dict to access ['SysTrans'] and ['EnvTrans'] line number in EngSpec
+        ltlSpec              : modified version of the ltl spec. going to print ['EnvTrans']
+        to_highlight         : return from analysis that the specs with problems
+        """
+
+        # Create the root        
+        self.tree_ctrl_traceback.DeleteAllItems()
+        root_node = self.tree_ctrl_traceback.AddRoot("Root")
+        LTL  = {}
+        for key,value in LTL2SpecLineNumber.iteritems():
+            LTL[ value ] = key.replace('\t','').replace('\n','')
+        
+        # highlight guilty specs
+        highlightColor = "#FF9900"
+        guilty_key = {}
+        for h_item in to_highlight:
+            if h_item[1] == 'goals':
+                guilty_key[h_item[0].title() + h_item[1].title()] = h_item[2]
+            else:
+                guilty_key[h_item[0].title() + h_item[1].title()] = None
+        
+        hightlightEnvTrans = False
+        guiltyLinesToHighlight = []
+        for specType in guilty_key.keys():
+            if specType == 'EnvTrans':
+                hightlightEnvTrans = True
+            elif specType == 'EnvGoals' or specType =='SysGoals':
+                guiltyLinesToHighlight.append(tracebackTree[specType][guilty_key[specType]])  
+            else:
+                for x in tracebackTree[specType]:
+                    guiltyLinesToHighlight.append(x)
+        
+        print guiltyLinesToHighlight
+        
+        for lineNo, EngSpec in enumerate(structuredSpec, start=1):
+            # Build the traceback tree           
+            if lineNo in tracebackTree['EnvTrans']: 
+                # Add a node for each input line    
+                input_node = self.tree_ctrl_traceback.AppendItem(root_node, EngSpec + "<--(REPLACED)") 
+                 # white out original env transition spec 
+                self.tree_ctrl_traceback.SetItemTextColour(input_node,"#a9a8a8")  
+            else:
+                # Add a node for each input line    
+                input_node = self.tree_ctrl_traceback.AppendItem(root_node, EngSpec) 
+                
+            # add LTL as formula under the structured English if it exists   
+            try:             
+                command_node = self.tree_ctrl_traceback.AppendItem(input_node, LTL[ lineNo ])
+                if lineNo in tracebackTree['EnvTrans']: 
+                    self.tree_ctrl_traceback.SetItemTextColour(command_node,"#a9a8a8") 
+            except:
+                pass
+                
+            # hightlight guilty specs
+            if lineNo in guiltyLinesToHighlight:
+                self.tree_ctrl_traceback.SetItemBackgroundColour(input_node,highlightColor) # pale pink
+                self.tree_ctrl_traceback.SetItemBackgroundColour(command_node,highlightColor) # pale pink
+            
+        # add the latest assumption generation here
+        input_node = self.tree_ctrl_traceback.AppendItem(root_node, "NEWLY GENERATED ENV SAFETY ASSUMPTIONS") 
+        command_node = self.tree_ctrl_traceback.AppendItem(input_node, ltlSpec['EnvTrans'].replace('\t','').replace('\n','')) 
+        
+        # highlight guilty specs
+        if hightlightEnvTrans == True:
+            self.tree_ctrl_traceback.SetItemBackgroundColour(input_node,highlightColor) # pale pink
+            self.tree_ctrl_traceback.SetItemBackgroundColour(command_node,highlightColor) # pale pink
+                        
+        self.Layout()
+    #################################################
 
     def markFragments(self, agent, section, jx=None):
         jx_this = -1 # debug output is 0-indexed
@@ -254,12 +339,14 @@ class SpecEditorFrame(wx.Frame):
         # begin wxGlade: SpecEditorFrame.__init__
         kwds["style"] = wx.DEFAULT_FRAME_STYLE
         wx.Frame.__init__(self, *args, **kwds)
-
+        
         # Menu Bar
         self.frame_1_menubar = wx.MenuBar()
         global MENU_IMPORT_REGION; MENU_IMPORT_REGION = wx.NewId()
         global MENU_COMPILE; MENU_COMPILE = wx.NewId()
         global MENU_COMPILECONFIG; MENU_COMPILECONFIG = wx.NewId()
+        global MENU_DECOMPOSITION; MENU_DECOMPOSITION = wx.NewId()
+        global MENU_DECOMPOSE; MENU_DECOMPOSE = wx.NewId()
         global MENU_CONVEXIFY; MENU_CONVEXIFY = wx.NewId()
         global MENU_FASTSLOW; MENU_FASTSLOW = wx.NewId()
         global MENU_BITVECTOR; MENU_BITVECTOR = wx.NewId()
@@ -270,7 +357,22 @@ class SpecEditorFrame(wx.Frame):
         global MENU_SYNTHESIZER; MENU_SYNTHESIZER = wx.NewId()
         global MENU_SYNTHESIZER_JTLV; MENU_SYNTHESIZER_JTLV = wx.NewId()
         global MENU_SYNTHESIZER_SLUGS; MENU_SYNTHESIZER_SLUGS = wx.NewId()
+        global MENU_REALIZABILITY; MENU_REALIZABILITY = wx.NewId()
+        global MENU_SYNTHESIS_OUTPUT_OPTIONS; MENU_SYNTHESIS_OUTPUT_OPTIONS = wx.NewId()
+        global MENU_EXPLICIT; MENU_EXPLICIT = wx.NewId()
+        global MENU_INTERACTIVE; MENU_INTERACTIVE = wx.NewId()
         global MENU_SYMBOLIC; MENU_SYMBOLIC = wx.NewId()
+        global MENU_SYNTHESIS_OPTIONS; MENU_SYNTHESIS_OPTIONS = wx.NewId()
+        global MENU_RECOVERY; MENU_RECOVERY = wx.NewId()
+        global MENU_COOPERATIVE; MENU_COOPERATIVE = wx.NewId()
+        global MENU_WINNING_LIVENESSES; MENU_WINNING_LIVENESSES = wx.NewId()
+        global MENU_MULTIROBOT_OPTIONS; MENU_MULTIROBOT_OPTIONS = wx.NewId()
+        global MENU_NEIGHBOUR_ROBOT; MENU_NEIGHBOUR_ROBOT = wx.NewId()
+        global MENU_INCLUDE_OTHER_ROBOT_HEADING; MENU_INCLUDE_OTHER_ROBOT_HEADING = wx.NewId()
+        global MENU_MULTIROBOT_OPTIONS_MODE; MENU_MULTIROBOT_OPTIONS_MODE = wx.NewId()
+        global MENU_MULTIROBOTMODE_NEGOTIATION; MENU_MULTIROBOTMODE_NEGOTIATION = wx.NewId()
+        global MENU_MULTIROBOTMODE_PATCHING; MENU_MULTIROBOTMODE_PATCHING = wx.NewId()
+        global MENU_MULTIROBOTMODE_DECENTRALIZED_PATCHING; MENU_MULTIROBOTMODE_DECENTRALIZED_PATCHING = wx.NewId()
         global MENU_SIMULATE; MENU_SIMULATE = wx.NewId()
         global MENU_SIMCONFIG; MENU_SIMCONFIG = wx.NewId()
         global MENU_ANALYZE; MENU_ANALYZE = wx.NewId()
@@ -296,7 +398,10 @@ class SpecEditorFrame(wx.Frame):
         wxglade_tmp_menu = wx.Menu()
         wxglade_tmp_menu.Append(MENU_COMPILE, "&Compile\tF5", "", wx.ITEM_NORMAL)
         wxglade_tmp_menu_sub = wx.Menu()
-        wxglade_tmp_menu_sub.Append(MENU_CONVEXIFY, "Decompose workspace into convex regions", "", wx.ITEM_CHECK)
+        wxglade_tmp_menu_sub_sub = wx.Menu()
+        wxglade_tmp_menu_sub_sub.Append(MENU_DECOMPOSE, "Decompose workspace", "", wx.ITEM_CHECK)
+        wxglade_tmp_menu_sub_sub.Append(MENU_CONVEXIFY, "Convexify Regions", "", wx.ITEM_CHECK)
+        wxglade_tmp_menu_sub.AppendMenu(MENU_DECOMPOSITION, "Decomposition", wxglade_tmp_menu_sub_sub, "")
         wxglade_tmp_menu_sub.Append(MENU_FASTSLOW, "Enable \"fast-slow\" synthesis", "", wx.ITEM_CHECK)
         wxglade_tmp_menu_sub.Append(MENU_BITVECTOR, "Use bit-vector region encoding", "", wx.ITEM_CHECK)
         wxglade_tmp_menu_sub_sub = wx.Menu()
@@ -308,7 +413,26 @@ class SpecEditorFrame(wx.Frame):
         wxglade_tmp_menu_sub_sub.Append(MENU_SYNTHESIZER_JTLV, "JTLV", "", wx.ITEM_RADIO)
         wxglade_tmp_menu_sub_sub.Append(MENU_SYNTHESIZER_SLUGS, "Slugs", "", wx.ITEM_RADIO)
         wxglade_tmp_menu_sub.AppendMenu(MENU_SYNTHESIZER, "Synthesizer", wxglade_tmp_menu_sub_sub, "")
-        wxglade_tmp_menu_sub.Append(MENU_SYMBOLIC, "Use symbolic strategy", "", wx.ITEM_CHECK)
+        wxglade_tmp_menu_sub.Append(MENU_REALIZABILITY, "Realizability only", "", wx.ITEM_CHECK)
+        wxglade_tmp_menu_sub_sub = wx.Menu()
+        wxglade_tmp_menu_sub_sub.Append(MENU_EXPLICIT, "Explicit strategy", "", wx.ITEM_RADIO)
+        wxglade_tmp_menu_sub_sub.Append(MENU_INTERACTIVE, "Interactive strategy", "", wx.ITEM_RADIO)
+        wxglade_tmp_menu_sub_sub.Append(MENU_SYMBOLIC, "Symbolic strategy", "", wx.ITEM_RADIO)
+        wxglade_tmp_menu_sub.AppendMenu(MENU_SYNTHESIS_OUTPUT_OPTIONS, "Synthesis Output Options", wxglade_tmp_menu_sub_sub, "")
+        wxglade_tmp_menu_sub_sub = wx.Menu()
+        wxglade_tmp_menu_sub_sub.Append(MENU_RECOVERY, "Use Recovery", "", wx.ITEM_CHECK)
+        wxglade_tmp_menu_sub_sub.Append(MENU_COOPERATIVE, "Use Cooperative Strategy", "", wx.ITEM_CHECK)
+        wxglade_tmp_menu_sub_sub.Append(MENU_WINNING_LIVENESSES, "Output winning livenesses", "", wx.ITEM_CHECK)
+        wxglade_tmp_menu_sub.AppendMenu(MENU_SYNTHESIS_OPTIONS, "Synthesis Options", wxglade_tmp_menu_sub_sub, "")
+        wxglade_tmp_menu_sub_sub = wx.Menu()
+        wxglade_tmp_menu_sub_sub.Append(MENU_NEIGHBOUR_ROBOT, "Neighbour robot", "", wx.ITEM_CHECK)
+        wxglade_tmp_menu_sub_sub.Append(MENU_INCLUDE_OTHER_ROBOT_HEADING, "Include other robot heading", "", wx.ITEM_CHECK)
+        wxglade_tmp_menu_sub_sub_sub = wx.Menu()
+        wxglade_tmp_menu_sub_sub_sub.Append(MENU_MULTIROBOTMODE_NEGOTIATION, "Negotiation", "", wx.ITEM_RADIO)
+        wxglade_tmp_menu_sub_sub_sub.Append(MENU_MULTIROBOTMODE_PATCHING, "Centralized-Patching", "", wx.ITEM_RADIO)
+        wxglade_tmp_menu_sub_sub_sub.Append(MENU_MULTIROBOTMODE_DECENTRALIZED_PATCHING, "Decentralized-Patching", "", wx.ITEM_RADIO)
+        wxglade_tmp_menu_sub_sub.AppendMenu(MENU_MULTIROBOT_OPTIONS_MODE, "Mode", wxglade_tmp_menu_sub_sub_sub, "")
+        wxglade_tmp_menu_sub.AppendMenu(MENU_MULTIROBOT_OPTIONS, "Multirobot Options", wxglade_tmp_menu_sub_sub, "")
         wxglade_tmp_menu.AppendMenu(MENU_COMPILECONFIG, "Compilation options", wxglade_tmp_menu_sub, "")
         wxglade_tmp_menu.AppendSeparator()
         wxglade_tmp_menu.Append(MENU_SIMULATE, "&Simulate\tF6", "", wx.ITEM_NORMAL)
@@ -372,6 +496,7 @@ class SpecEditorFrame(wx.Frame):
         self.Bind(wx.EVT_MENU, self.onMenuCopy, id=wx.ID_COPY)
         self.Bind(wx.EVT_MENU, self.onMenuPaste, id=wx.ID_PASTE)
         self.Bind(wx.EVT_MENU, self.onMenuCompile, id=MENU_COMPILE)
+        self.Bind(wx.EVT_MENU, self.onMenuSetCompileOptions, id=MENU_DECOMPOSE)
         self.Bind(wx.EVT_MENU, self.onMenuSetCompileOptions, id=MENU_CONVEXIFY)
         self.Bind(wx.EVT_MENU, self.onMenuSetCompileOptions, id=MENU_FASTSLOW)
         self.Bind(wx.EVT_MENU, self.onMenuSetCompileOptions, id=MENU_BITVECTOR)
@@ -380,7 +505,18 @@ class SpecEditorFrame(wx.Frame):
         self.Bind(wx.EVT_MENU, self.onMenuSetCompileOptions, id=MENU_PARSERMODE_LTL)
         self.Bind(wx.EVT_MENU, self.onMenuSetCompileOptions, id=MENU_SYNTHESIZER_JTLV)
         self.Bind(wx.EVT_MENU, self.onMenuSetCompileOptions, id=MENU_SYNTHESIZER_SLUGS)
+        self.Bind(wx.EVT_MENU, self.onMenuSetCompileOptions, id=MENU_REALIZABILITY)
+        self.Bind(wx.EVT_MENU, self.onMenuSetCompileOptions, id=MENU_EXPLICIT)
+        self.Bind(wx.EVT_MENU, self.onMenuSetCompileOptions, id=MENU_INTERACTIVE)
         self.Bind(wx.EVT_MENU, self.onMenuSetCompileOptions, id=MENU_SYMBOLIC)
+        self.Bind(wx.EVT_MENU, self.onMenuSetCompileOptions, id=MENU_RECOVERY)
+        self.Bind(wx.EVT_MENU, self.onMenuSetCompileOptions, id=MENU_COOPERATIVE)
+        self.Bind(wx.EVT_MENU, self.onMenuSetCompileOptions, id=MENU_WINNING_LIVENESSES)
+        self.Bind(wx.EVT_MENU, self.onMenuSetCompileOptions, id=MENU_NEIGHBOUR_ROBOT)
+        self.Bind(wx.EVT_MENU, self.onMenuSetCompileOptions, id=MENU_INCLUDE_OTHER_ROBOT_HEADING)
+        self.Bind(wx.EVT_MENU, self.onMenuSetCompileOptions, id=MENU_MULTIROBOTMODE_NEGOTIATION)
+        self.Bind(wx.EVT_MENU, self.onMenuSetCompileOptions, id=MENU_MULTIROBOTMODE_PATCHING)
+        self.Bind(wx.EVT_MENU, self.onMenuSetCompileOptions, id=MENU_MULTIROBOTMODE_DECENTRALIZED_PATCHING)
         self.Bind(wx.EVT_MENU, self.onMenuSimulate, id=MENU_SIMULATE)
         self.Bind(wx.EVT_MENU, self.onMenuConfigSim, id=MENU_SIMCONFIG)
         self.Bind(wx.EVT_MENU, self.onMenuAnalyze, id=MENU_ANALYZE)
@@ -910,9 +1046,17 @@ class SpecEditorFrame(wx.Frame):
 
     def updateMenusFromProjectOptions(self):
         self.frame_1_menubar.Check(MENU_CONVEXIFY, self.proj.compile_options["convexify"])
+        self.frame_1_menubar.Check(MENU_DECOMPOSE, self.proj.compile_options["decompose"])
         self.frame_1_menubar.Check(MENU_BITVECTOR, self.proj.compile_options["use_region_bit_encoding"])
         self.frame_1_menubar.Check(MENU_FASTSLOW, self.proj.compile_options["fastslow"])
+        self.frame_1_menubar.Check(MENU_REALIZABILITY, self.proj.compile_options["only_realizability"])
         self.frame_1_menubar.Check(MENU_SYMBOLIC, self.proj.compile_options["symbolic"])
+        self.frame_1_menubar.Check(MENU_INTERACTIVE, self.proj.compile_options["interactive"])
+        self.frame_1_menubar.Check(MENU_RECOVERY, self.proj.compile_options["recovery"])
+        self.frame_1_menubar.Check(MENU_WINNING_LIVENESSES, self.proj.compile_options["winning_livenesses"])
+        self.frame_1_menubar.Check(MENU_COOPERATIVE, self.proj.compile_options["cooperative_gr1"])
+        self.frame_1_menubar.Check(MENU_NEIGHBOUR_ROBOT, self.proj.compile_options["neighbour_robot"])
+        self.frame_1_menubar.Check(MENU_INCLUDE_OTHER_ROBOT_HEADING, self.proj.compile_options["include_heading"])
 
         if self.proj.compile_options["parser"] == "slurp":
             self.frame_1_menubar.Check(MENU_PARSERMODE_SLURP, True)
@@ -925,6 +1069,13 @@ class SpecEditorFrame(wx.Frame):
             self.frame_1_menubar.Check(MENU_SYNTHESIZER_JTLV, True)
         elif self.proj.compile_options["synthesizer"] == "slugs":
             self.frame_1_menubar.Check(MENU_SYNTHESIZER_SLUGS, True)
+
+        if self.proj.compile_options["multi_robot_mode"] == "negotiation":
+            self.frame_1_menubar.Check(MENU_MULTIROBOTMODE_NEGOTIATION, True)
+        elif self.proj.compile_options["multi_robot_mode"] == "patching":
+            self.frame_1_menubar.Check(MENU_MULTIROBOTMODE_PATCHING, True)
+        elif self.proj.compile_options["multi_robot_mode"] == "d-patching":
+            self.frame_1_menubar.Check(MENU_MULTIROBOTMODE_DECENTRALIZED_PATCHING, True)
 
     def doClose(self, event): # wxGlade: SpecEditorFrame.<event_handler>
         """
@@ -995,18 +1146,21 @@ class SpecEditorFrame(wx.Frame):
 
         #event.Skip()
 
-    def onMenuCompile(self, event): # wxGlade: SpecEditorFrame.<event_handler>
+    def onMenuCompile(self, event, analyze = False): # wxGlade: SpecEditorFrame.<event_handler>
+        """
+        if analyze = True, do not modify spec
+        """
         # Clear the error markers
         self.text_ctrl_spec.MarkerDeleteAll(MARKER_INIT)
         self.text_ctrl_spec.MarkerDeleteAll(MARKER_SAFE)
         self.text_ctrl_spec.MarkerDeleteAll(MARKER_LIVE)
         self.text_ctrl_spec.MarkerDeleteAll(MARKER_PARSEERROR)
 
-		# Let's make sure we have everything!
-        if self.proj.rfi is None:
-            wx.MessageBox("Please define regions before compiling.", "Error",
-                        style = wx.OK | wx.ICON_ERROR)
-            return
+        # Let's make sure we have everything!
+        #if self.proj.rfi is None:
+        #    wx.MessageBox("Please define regions before compiling.", "Error",
+        #                style = wx.OK | wx.ICON_ERROR)
+        #    return
 
         if self.proj.specText.strip() == "":
             wx.MessageBox("Please write a specification before compiling.", "Error",
@@ -1019,7 +1173,7 @@ class SpecEditorFrame(wx.Frame):
             return
 
         # Check that there's a boundary region
-        if self.proj.compile_options["decompose"] and self.proj.rfi.indexOfRegionWithName("boundary") < 0:
+        if self.proj.rfi is not None and self.proj.compile_options["decompose"] and self.proj.rfi.indexOfRegionWithName("boundary") < 0:
             wx.MessageBox("Please define a boundary region before compiling.\n(Just add a region named 'boundary' in RegionEditor.)", "Error",
                         style = wx.OK | wx.ICON_ERROR)
             return
@@ -1041,9 +1195,14 @@ class SpecEditorFrame(wx.Frame):
 
         self.appendLog("Decomposing map into convex regions...\n", "BLUE")
 
-        compiler._decompose()
-        self.proj = compiler.proj
-        self.decomposedRFI = compiler.parser.proj.rfi
+        if self.proj.rfi is not None:
+            if self.proj.compile_options['decompose']:
+                compiler._decompose()
+                self.proj = compiler.proj
+                self.decomposedRFI = compiler.parser.proj.rfi
+            else:
+                self.decomposedRFI = compiler.proj.rfi
+
 
         # Update workspace decomposition listbox
         if self.proj.regionMapping is not None:
@@ -1051,9 +1210,9 @@ class SpecEditorFrame(wx.Frame):
             self.list_box_locphrases.Select(0)
 
         self.appendLog("Creating LTL...\n", "BLUE")
-
-        spec, self.tracebackTree, self.response = compiler._writeLTLFile()
-
+        ############# ENV ASSUMPTION MINING ###################
+        self.spec, self.tracebackTree, self.response = compiler._writeLTLFile()
+        #########################################################
         # Add any auto-generated propositions to the list
         # TODO: what about removing old ones?
         for p in compiler.proj.internal_props:
@@ -1147,7 +1306,44 @@ class SpecEditorFrame(wx.Frame):
                 self.appendLog("Automaton successfully synthesized for instantaneous actions.\n", "GREEN")
             else:
                 self.appendLog("ERROR: Specification was unsynthesizable (unrealizable/unsatisfiable) for instantaneous actions.\n", "RED")
+        
+            ############# ENV Assumption Learning ###################
+            return
+            if not compiler.realizable and not analyze:
+                self.appendLog("\tNow we are changing the environment safety assumptions from [](TRUE) to [](FALSE).\n","BLUE")
+                #path_ltl =  os.path.join(self.proj.project_root,self.proj.getFilenamePrefix()+".ltl")  # path of ltl file to be passed to the function 
+                #LTLViolationCheck = LTLcheck.LTL_Check(path_ltl,compiler.LTL2SpecLineNumber,spec)
+                #LTLViolationCheck.modify_LTL_file()
+                ltl_filename = self.proj.getFilenamePrefix() + ".ltl"
+                self.spec['EnvTrans'] = '\t[](FALSE) & \n'
+                 
+                # putting all the LTL fragments together (see specCompiler.py to view details of these fragments)
+                #LTLspec_env = "( " + self.spec["EnvInit"] + ")&\n" + self.spec["EnvTrans"] + self.spec["EnvGoals"]
+                LTLspec_env = self.spec["EnvTrans"] + self.spec["EnvGoals"]
+                LTLspec_sys = "( " + self.spec["SysInit"] + ")&\n" + self.spec["SysTrans"] + self.spec["SysGoals"]
+                
+                LTLspec_sys += "\n&\n" + self.spec['InitRegionSanityCheck']
 
+                LTLspec_sys += "\n&\n" + self.spec['Topo']
+
+                # Rewrite the file
+                import createJTLVinput
+                createJTLVinput.createLTLfile(ltl_filename, LTLspec_env, LTLspec_sys)
+                realizable, realizableFS, output = compiler._synthesize()
+            
+                if realizable:
+                    self.appendLog("\tAutomaton successfully synthesized for instantaneous actions.\n", "GREEN")
+                    
+                    # Load in LTL file to the LTL tab
+                    if os.path.exists(self.proj.getFilenamePrefix()+".ltl"):
+                        f = open(self.proj.getFilenamePrefix()+".ltl","r")
+                        ltl = "".join(f.readlines())
+                        f.close()
+                        self.text_ctrl_LTL.SetValue(ltl)
+                else:
+                    self.appendLog("\tERROR: Specification was unsynthesizable (unrealizable/unsatisfiable) for instantaneous actions.\n", "RED")
+            #########################################################
+        
         # Check for trivial aut
         if compiler.realizable or compiler.realizableFS:
             if not compiler._autIsNonTrivial():
@@ -1167,10 +1363,10 @@ class SpecEditorFrame(wx.Frame):
     def onMenuSimulate(self, event): # wxGlade: SpecEditorFrame.<event_handler>
         """ Run the simulation with current experiment configuration. """
 
-        if not self.proj.compile_options["use_region_bit_encoding"]:
-            wx.MessageBox("Execution requires bit-vector region encoding.\nPlease enable it and recompile.", "Error",
-                        style = wx.OK | wx.ICON_ERROR)
-            return
+        #if not self.proj.compile_options["use_region_bit_encoding"]:
+        #    wx.MessageBox("Execution requires bit-vector region encoding.\nPlease enable it and recompile.", "Error",
+        #                style = wx.OK | wx.ICON_ERROR)
+        #    return
 
         # TODO: or check mtime
         if self.dirty:
@@ -1180,7 +1376,8 @@ class SpecEditorFrame(wx.Frame):
             if response != wx.YES:
                 return
 
-        if not os.path.isfile(self.proj.getFilenamePrefix()+".aut"):
+        if not os.path.isfile(self.proj.getFilenamePrefix()+".aut") and not os.path.isfile(self.proj.getFilenamePrefix()+".bdd")\
+            and not self.proj.compile_options['interactive']:
             # TODO: Deal with case where aut file exists but is lame
             wx.MessageBox("Cannot find automaton for simulation.  Please make sure compilation completed successfully.", "Error",
                         style = wx.OK | wx.ICON_ERROR)
@@ -1301,15 +1498,20 @@ class SpecEditorFrame(wx.Frame):
         self.subprocess["Simulation Configuration"] = WxAsynchronousProcessThread([sys.executable, "-u", "-m", "lib.configEditor", self.proj.getFilenamePrefix()+".spec"], simConfigCallback, None)
 
     def _exportDotFile(self):
-        region_domain = strategy.Domain("region",  self.decomposedRFI.regions, strategy.Domain.B0_IS_MSB)
-        strat = strategy.createStrategyFromFile(self.proj.getStrategyFilename(),
+        if self.decomposedRFI:
+            region_domain = strategy.Domain("region",  self.decomposedRFI.regions, strategy.Domain.B0_IS_MSB)
+            strat = strategy.createStrategyFromFile(self.proj.getStrategyFilename(),
                                                 self.proj.enabled_sensors,
                                                 self.proj.enabled_actuators + self.proj.all_customs +  [region_domain])
+        else:
+            strat = strategy.createStrategyFromFile(self.proj.getStrategyFilename(),
+                                                self.proj.enabled_sensors,
+                                                self.proj.enabled_actuators + self.proj.all_customs)
 
         strat.exportAsDotFile(self.proj.getFilenamePrefix()+".dot", self.proj.regionMapping)
 
     def _exportSMVFile(self):
-        aut.writeSMV(self.proj.getFilenamePrefix()+"MC.smv")
+        aut.writeSMV(self.proj.getFilenamePrefix()+"MC.smv")  
 
 
 
@@ -1366,7 +1568,7 @@ class SpecEditorFrame(wx.Frame):
 
     def onMenuAnalyze(self, event): # wxGlade: SpecEditorFrame.<event_handler>
         #TODO: check to see if we need to recompile
-        self.compiler, self.badInit = self.onMenuCompile(event)
+        self.compiler, self.badInit = self.onMenuCompile(event, analyze = True)
 
         # instantiate if necessary
         if self.analysisDialog is None:
@@ -1428,6 +1630,15 @@ class SpecEditorFrame(wx.Frame):
                 tb_key = h_item[0].title() + h_item[1].title()
                 if h_item[1] == "goals":
                     self.text_ctrl_spec.MarkerAdd(self.tracebackTree[tb_key][h_item[2]]-1, MARKER_LIVE)
+                #############  ENV Assumption Mining CAT ############
+#                elif h_item[1] == "trans":
+#                    for lineNo in self.tracebackTree[tb_key]:
+#                        self.text_ctrl_spec.MarkerAdd(lineNo-1, MARKER_SAFE)
+#                elif h_item[1] == "init":
+#                    for lineNo in self.tracebackTree[tb_key]:
+#                        self.text_ctrl_spec.MarkerAdd(lineNo-1, MARKER_INIT)
+                ##################################
+                
         elif self.proj.compile_options["parser"] == "slurp":
             for frag in self.to_highlight:
                 self.analysisDialog.markFragments(*frag)
@@ -1438,7 +1649,7 @@ class SpecEditorFrame(wx.Frame):
 
         self.appendLog("Initial analysis complete.\n\n", "BLUE")
 
-        if (not realizable or not nonTrivial) and self.unsat:
+        if (not realizable or not nonTrivial):
             self.appendLog("Further analysis is possible.\n", "BLUE")
             self.analysisDialog.button_refine.Enable(True)
             self.analysisDialog.button_refine.SetLabel("Refine analysis...")
@@ -1455,6 +1666,16 @@ class SpecEditorFrame(wx.Frame):
         guilty = self.compiler._coreFinding(self.to_highlight, self.unsat, self.badInit)
 
         self.highlightCores(guilty, self.compiler)
+        
+        #if not self.unsat:
+        to_highlight = self.compiler._iterateCores()
+    
+        #highlight guilty transitions
+        if self.proj.compile_options["parser"] == "structured":
+            for h_item in to_highlight:
+                tb_key = h_item[0].title() + h_item[1].title()
+                if h_item[2] < len(self.tracebackTree[tb_key]):
+                    self.text_ctrl_spec.MarkerAdd(self.tracebackTree[tb_key][h_item[2]]-1, MARKER_INIT)
 
         self.appendLog("Final analysis complete.\n", "BLUE")
 
@@ -1464,8 +1685,10 @@ class SpecEditorFrame(wx.Frame):
 
     def highlightCores(self, guilty, compiler):
         if self.proj.compile_options["parser"] == "structured":
-            print guilty
             if guilty is not None:
+                #highlight system initial condition
+                for l in self.tracebackTree['SysInit']:
+                    self.highlight(l, "init")
                 #look up the line number corresponding to each guilty LTL formula
                 for k,v in compiler.LTL2SpecLineNumber.iteritems():
                     newCs = k.replace("\t","\n").split('\n')
@@ -1487,7 +1710,6 @@ class SpecEditorFrame(wx.Frame):
                     else:
                         print "WARNING: LTL fragment {!r} not found in spec->LTL mapping".format(canonical_ltl_frag)
 
-            print guilty_clean
             # Add SLURP to path for import
             p = os.path.dirname(os.path.abspath(__file__))
             sys.path.append(os.path.join(p, "..", "etc", "SLURP"))
@@ -1647,9 +1869,17 @@ class SpecEditorFrame(wx.Frame):
 
     def onMenuSetCompileOptions(self, event):  # wxGlade: SpecEditorFrame.<event_handler>
         self.proj.compile_options["convexify"] = self.frame_1_menubar.IsChecked(MENU_CONVEXIFY)
+        self.proj.compile_options["decompose"] = self.frame_1_menubar.IsChecked(MENU_DECOMPOSE)
         self.proj.compile_options["fastslow"] = self.frame_1_menubar.IsChecked(MENU_FASTSLOW)
         self.proj.compile_options["use_region_bit_encoding"] = self.frame_1_menubar.IsChecked(MENU_BITVECTOR)
+        self.proj.compile_options["only_realizability"] = self.frame_1_menubar.IsChecked(MENU_REALIZABILITY)
         self.proj.compile_options["symbolic"] = self.frame_1_menubar.IsChecked(MENU_SYMBOLIC)
+        self.proj.compile_options["interactive"] = self.frame_1_menubar.IsChecked(MENU_INTERACTIVE)
+        self.proj.compile_options["recovery"] = self.frame_1_menubar.IsChecked(MENU_RECOVERY)
+        self.proj.compile_options["winning_livenesses"] = self.frame_1_menubar.IsChecked(MENU_WINNING_LIVENESSES)
+        self.proj.compile_options["cooperative_gr1"] = self.frame_1_menubar.IsChecked(MENU_COOPERATIVE)
+        self.proj.compile_options["neighbour_robot"] = self.frame_1_menubar.IsChecked(MENU_NEIGHBOUR_ROBOT)
+        self.proj.compile_options["include_heading"] = self.frame_1_menubar.IsChecked(MENU_INCLUDE_OTHER_ROBOT_HEADING)
 
         if self.frame_1_menubar.IsChecked(MENU_PARSERMODE_SLURP):
             self.proj.compile_options["parser"] = "slurp"
@@ -1662,6 +1892,13 @@ class SpecEditorFrame(wx.Frame):
             self.proj.compile_options["synthesizer"] = "jtlv"
         elif self.frame_1_menubar.IsChecked(MENU_SYNTHESIZER_SLUGS):
             self.proj.compile_options["synthesizer"] = "slugs"
+
+        if self.frame_1_menubar.IsChecked(MENU_MULTIROBOTMODE_NEGOTIATION):
+            self.proj.compile_options["multi_robot_mode"] = "negotiation"
+        elif self.frame_1_menubar.IsChecked(MENU_MULTIROBOTMODE_PATCHING):
+            self.proj.compile_options["multi_robot_mode"] = "patching"
+        elif self.frame_1_menubar.IsChecked(MENU_MULTIROBOTMODE_DECENTRALIZED_PATCHING):
+            self.proj.compile_options["multi_robot_mode"] = "d-patching"
 
         self.dirty = True
 

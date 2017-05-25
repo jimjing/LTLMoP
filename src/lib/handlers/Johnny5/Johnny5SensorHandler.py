@@ -7,8 +7,11 @@ Johnny5SensorHandler.py - Johnny 5 Robot Sensor Handler
 
 import time
 import math
-import logging
 import globalConfig
+
+# logger for ltlmop
+import logging
+ltlmop_logger = logging.getLogger('ltlmop_logger')
 
 import lib.handlers.handlerTemplates as handlerTemplates
 
@@ -22,8 +25,10 @@ class Johnny5SensorHandler(handlerTemplates.SensorHandler):
         try:
             self.johnny5Serial = shared_data["Johnny5Serial"]
         except:
-            logging.exception("No connection to Johnny 5")
+            ltlmop_logger.exception("No connection to Johnny 5")
             sys.exit(-1)
+
+        self.johnny5InitHandler = shared_data['Johnny5_INIT_HANDLER']
 
     ###################################
     ### Available sensor functions: ###
@@ -68,3 +73,13 @@ class Johnny5SensorHandler(handlerTemplates.SensorHandler):
 
             return False
 
+    def isBehaviorCompleted(self, actuatorName, initial=False):
+        """
+        Check if the behavior is currently running.
+        actuatorName (string): name of the behavior.
+        """
+        if initial:
+            pass
+        else:
+            #ltlmop_logger.debug(self.johnny5InitHandler.behaviorStatus.keys())
+            return self.johnny5InitHandler.behaviorStatus[actuatorName]

@@ -6,7 +6,9 @@ naoActuator.py - Nao Actuator Handler
 
 Control predefined Nao motion besides walking
 """
-
+# logger for ltlmop
+import logging
+ltlmop_logger = logging.getLogger('ltlmop_logger')
 import time
 import threading
 
@@ -29,6 +31,7 @@ class NaoActuatorHandler(handlerTemplates.ActuatorHandler):
         self.asyncBehaviorFlags = {}
         self.asyncBehaviorThreads = {}
 
+        self.naoInitHandler.behaviorStatus = {} # true if actuator is true, False otherwise.
 
     #####################################
     ### Available actuator functions: ###
@@ -126,24 +129,23 @@ class NaoActuatorHandler(handlerTemplates.ActuatorHandler):
             print "Killing already running behavior: " + str(b)
             self.behaviorProxy.stopBehavior(b)
 
-    def runBehavior(self, startBehaviorName, endBehaviorName, repeat, repeat_period, actuatorVal, initial=False):
+    def runBehavior(self, startBehaviorName, endBehaviorName, actuatorVal, initial=False):
         """
         Run a behavior that has been pre-loaded onto Nao with Choregraphe.
 
         startBehaviorName (string): name of behavior to run when prop goes from False to True
         endBehaviorName (string): name of [optional] behavior to run when prop goes from True to False (default="")
-        repeat (bool): choose whether to continuously repeat the startBehavior as long as prop is true [asynchronously] (default=false)
-        repeat_period (float): period with which to repeat the action, if `repeat` is True.  Must be longer than the action length.
         """
-
+        repeat_period = 1.0
+        repeat = False
         if initial:
             if self.behaviorProxy is None:
                 self.behaviorProxy = self.naoInitHandler.createProxy('ALBehaviorManager')
 
             # Preload behaviors to make sure they execute quickly
-            self.behaviorProxy.preloadBehavior(startBehaviorName)
-            if endBehaviorName != "":
-                self.behaviorProxy.preloadBehavior(endBehaviorName)
+            #self.behaviorProxy.preloadBehavior(startBehaviorName)
+            #if endBehaviorName != "":
+            #   self.behaviorProxy.preloadBehavior(endBehaviorName)
 
             if repeat:
                 self.asyncBehaviorFlags[startBehaviorName+","+endBehaviorName] = False
@@ -159,19 +161,26 @@ class NaoActuatorHandler(handlerTemplates.ActuatorHandler):
 
                 self.asyncBehaviorThreads[startBehaviorName+","+endBehaviorName] = threading.Thread(target = actionThread, args = (self,))
                 self.asyncBehaviorThreads[startBehaviorName+","+endBehaviorName].start()
+
+            # initialize status tracking:
+            self.naoInitHandler.behaviorStatus[startBehaviorName] = False
         else:
             if actuatorVal:
                 if repeat:
                     self.asyncBehaviorFlags[startBehaviorName+","+endBehaviorName] = True
                 else:
                     self._killBehaviors()
-                    self.behaviorProxy.runBehavior(startBehaviorName)
+                    self.behaviorProxy.post.runBehavior(startBehaviorName)
+                self.naoInitHandler.behaviorStatus[startBehaviorName] = True # starting actuation
+
             else:
                 if repeat:
                     self.asyncBehaviorFlags[startBehaviorName+","+endBehaviorName] = False
 
                 self._killBehaviors()
                 if endBehaviorName != "":
-                    self.behaviorProxy.runBehavior(endBehaviorName)
+                    self.behaviorProxy.post.runBehavior(endBehaviorName)
+
+                self.naoInitHandler.behaviorStatus[startBehaviorName] = False # ending actuation
 
 

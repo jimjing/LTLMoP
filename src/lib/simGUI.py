@@ -131,6 +131,14 @@ class SimGUI_Frame(wx.Frame):
         self.currentGoal = None
 
         self.Bind(wx.EVT_CLOSE, self.onClose)
+        
+        #################### ENV ASSUMPTION LEARNING ##################
+        self.currentColor = "BLACK"
+        ################################################################
+
+        ### RRT Path ####
+        self.RRTPath = None
+        #################
 
     def loadRegionFile(self, filename):
         self.proj.rfi = regions.RegionFileInterface()
@@ -177,6 +185,13 @@ class SimGUI_Frame(wx.Frame):
             [x,y] = eventData
             [x,y] = map(int, (self.mapScale*x, self.mapScale*y)) 
             self.robotVel = (x, y)
+        #########################
+        elif eventType == "RRT":
+            self.RRTPath = []
+            for [x,y] in eventData:
+                self.RRTPath.append(map(int, (self.mapScale*x, self.mapScale*y)))
+            wx.CallAfter(self.onPaint)
+        ##########################
         elif eventType == "PAUSE":
             wx.CallAfter(self.sb.SetStatusText, "PAUSED.", 0)
         elif eventType == "SPEC":
@@ -193,7 +208,29 @@ class SimGUI_Frame(wx.Frame):
                         wx.CallAfter(self.appendLog, eventData + "\n", color="BLUE") 
                 elif eventData.startswith("Crossed border"):
                     if self.checkbox_statusLog_border.GetValue():
-                        wx.CallAfter(self.appendLog, eventData + "\n", color="CYAN") 
+                        wx.CallAfter(self.appendLog, eventData + "\n", color="CYAN")
+                    #################### ENV ASSUMPTION LEARNING ##################
+                elif eventType == "VIOLATION":
+                    wx.CallAfter(self.appendLog, eventData + "\n", color="RED") 
+                    self.currentColor = "RED"
+                elif eventType == "RESOLVED":
+                    wx.CallAfter(self.appendLog, eventData + "\n", color="GREEN") 
+                    self.currentColor = "BLACK"
+                elif eventType == "INFO":
+                    wx.CallAfter(self.appendLog, eventData + "\n", color= self.currentColor) 
+                    ############################################################### 
+                    # ---------------- two_robot_negotiation ------------ #
+                elif eventType == "NEGO":
+                    wx.CallAfter(self.appendLog, eventData + "\n", color= "#9933FF") 
+                    # --------------------------------------------------- #
+                    # **************** patching ********************* #
+                elif eventType == "PATCH":
+                    wx.CallAfter(self.appendLog, eventData + "\n", color= "#FF8000")
+                    # *********************************************** #
+                   # %%%%%%%%%%%%%% d-patching %%%%%%%%%%%%%%%%%#
+                elif eventType == "D-PATCH":
+                    wx.CallAfter(self.appendLog, eventData + "\n", color= "#FF3399")
+                    # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% #
                     # Detect our current goal index
                 elif eventData.startswith("Currently pursuing goal"):
                     m = re.search(r"#(\d+)", eventData)
@@ -273,11 +310,12 @@ class SimGUI_Frame(wx.Frame):
 
     def onResize(self, event=None): # wxGlade: SimGUI_Frame.<event_handler>
         size = self.window_1_pane_1.GetSize()
-        self.mapBitmap = wx.EmptyBitmap(size.x, size.y)
-        self.mapScale = mapRenderer.drawMap(self.mapBitmap, self.proj.rfi, scaleToFit=True, drawLabels=mapRenderer.LABELS_ALL_EXCEPT_OBSTACLES, memory=True)
+        if self.proj.rfi:
+            self.mapBitmap = wx.EmptyBitmap(size.x, size.y)
+            self.mapScale = mapRenderer.drawMap(self.mapBitmap, self.proj.rfi, scaleToFit=True, drawLabels=mapRenderer.LABELS_ALL_EXCEPT_OBSTACLES, memory=True)
 
-        self.Refresh()
-        self.Update()
+            self.Refresh()
+            self.Update()
 
         if event is not None:
             event.Skip()
@@ -304,14 +342,25 @@ class SimGUI_Frame(wx.Frame):
         # Draw background
         dc.DrawBitmap(self.mapBitmap, 0, 0)
 
-        # Draw robot
-        if self.robotPos is not None:
-            [x,y] = map(lambda x: int(self.mapScale*x), self.robotPos) 
-            dc.DrawCircle(x, y, 5)
-        if self.markerPos is not None:
-            [m,n] = map(lambda m: int(self.mapScale*m), self.markerPos) 
-            dc.SetBrush(wx.Brush(wx.RED))
-            dc.DrawCircle(m, n, 5)
+        # Draw RRT Path
+        if self.RRTPath is not None:
+            for [x,y] in self.RRTPath:
+                dc.SetBrush(wx.Brush(wx.BLUE))
+                dc.DrawCircle(x, y, 3)
+
+            for [x1,y1],[x2,y2] in zip(self.RRTPath[:-1], self.RRTPath[1:]):
+                dc.DrawLine(x1, y1, x2, y2)
+
+        dc.SetBrush(wx.Brush(wx.WHITE))
+        if self.proj.rfi:
+            # Draw robot
+            if self.robotPos is not None:
+                [x,y] = map(lambda x: int(self.mapScale*x), self.robotPos)
+                dc.DrawCircle(x, y, 5)
+            if self.markerPos is not None:
+                [m,n] = map(lambda m: int(self.mapScale*m), self.markerPos)
+                dc.SetBrush(wx.Brush(wx.RED))
+                dc.DrawCircle(m, n, 5)
 
         # Draw velocity vector of robot (for debugging)
         #dc.DrawLine(self.robotPos[0], self.robotPos[1], 

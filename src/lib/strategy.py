@@ -9,7 +9,6 @@
 
 import math
 import re
-import logging
 import textwrap
 import regions
 import sys
@@ -17,13 +16,18 @@ import collections
 import copy
 import globalConfig
 
+# logger for ltlmop
+import logging
+ltlmop_logger = logging.getLogger('ltlmop_logger')
+
+# TODO: make sure this works with mopsy
 # TODO: generalize notion of sets of states in a way transparent to both BDD and
 # FSA, so we don't end up unnecessarily creating and iterating over state
 # objects for things that can be done with a single BDD op
 # TODO: should we be using region names instead of objects to avoid
 # weird errors if two copies of the same map are used?
 
-def createStrategyFromFile(filename, input_propositions, output_propositions):
+def createStrategyFromFile(filename, input_propositions, output_propositions, slugsOptions=[]):
     """ High-level method for loading a strategy of any type from file.
 
         Takes a filename and lists of input and output propositions.
@@ -33,9 +37,16 @@ def createStrategyFromFile(filename, input_propositions, output_propositions):
     if filename.endswith(".aut"):
         import fsa
         new_strategy = fsa.FSAStrategy()
-    elif filename.endswith(".bdd"):
+    elif filename.endswith(".bdd") or filename.endswith(".add"):
         import bdd
-        new_strategy = bdd.BDDStrategy()
+        if filename.endswith(".bdd"):
+            new_strategy = bdd.BDDStrategy(add = False)
+        else:
+            new_strategy = bdd.BDDStrategy(add = True)
+    elif filename.endswith(".slugsin"):
+        import interactiveExecution
+        ltlmop_logger.debug("using interactiveStrategy")
+        new_strategy = interactiveExecution.SLUGSInteractiveStrategy(slugsOptions)
     else:
         raise ValueError("Unsupported strategy file type.  Filename must end with either '.aut' or '.bdd'.")
 
@@ -339,8 +350,8 @@ class State(object):
         # Make sure that the value makes sense
         domain = self.context.getDomainByName(prop_name)
         if domain is None:
-            if not isinstance(prop_value, bool):
-                raise ValueError("Invalid value of {!r} for proposition {!r}: can only assign boolean values to non-Domain propositions".format(prop_value, prop_name))
+            if not (prop_value is None or isinstance(prop_value, bool)):
+                raise ValueError("Invalid value of {!r} for proposition {!r}: can only assign boolean or None values to non-Domain propositions".format(prop_value, prop_name))
         else:
             if prop_value not in domain.value_mapping:
                 raise ValueError("Invalid value of {!r} for domain {!r}.  Acceptable values: {!r}".format(prop_value, prop_name, domain.value_mapping))
@@ -357,7 +368,7 @@ class State(object):
         for prop_name, prop_value in prop_assignments.iteritems():
             self.setPropValue(prop_name, prop_value)
 
-    def getLTLRepresentation(self, mark_players=True, use_next=False, include_inputs=True, swap_players=False):
+    def getLTLRepresentation(self, mark_players=True, use_next=False, include_inputs=True, include_outputs=True, swap_players=False):
         """ Returns an LTL formula representing this state.
 
             If `mark_players` is True, input propositions are prepended with
@@ -375,6 +386,7 @@ class State(object):
             # Rewrite proposition names to make the old bitvector system work
             # with the new one
             prop = re.sub(r'^([se]\.)region_b(\d+)$', r'\1bit\2', prop)
+            prop = re.sub(r'^([se]\.)regionCompleted_b(\d+)$', r'\1sbit\2', prop)
             #################################################################
 
             if use_next:
@@ -388,15 +400,21 @@ class State(object):
         else:
             env_label, sys_label = "e.", "s."
 
-        sys_state = " & ".join((decorate_prop(sys_label+p, v) for p, v in \
+        if include_outputs:
+        	sys_state = " & ".join((decorate_prop(sys_label+p, v) for p, v in \
                                 self.getOutputs(expand_domains=True).iteritems()))
 
         if include_inputs:
             env_state = " & ".join((decorate_prop(env_label+p, v) for p, v in \
                                     self.getInputs(expand_domains=True).iteritems()))
+        if include_outputs and not include_inputs:
+            return sys_state
+        elif not include_outputs and include_inputs:
+            return env_state
+        elif include_outputs and include_inputs:
             return " & ".join([env_state, sys_state])
         else:
-            return sys_state
+            print "please specified either outputs or inputs to print"
 
     def __eq__(self, other):
         return isinstance(other, State) and hash(self) == hash(other)
@@ -454,8 +472,8 @@ class StateCollection(list):
     >>> assert s2.satisfies(test_assignment)
 
     LTL is available too!
-    #>>> s2.getLTLRepresentation()
-    #'!e.nearby_animal_b1 & !e.nearby_animal_b0 & e.nearby_animal_b2 & e.low_battery & s.region_b0 & !s.region_b1 & !s.give_up & !s.experiment & s.hypothesize'
+    >>> s2.getLTLRepresentation()
+    '!e.nearby_animal_b1 & !e.nearby_animal_b0 & e.nearby_animal_b2 & e.low_battery & s.region_b0 & !s.region_b1 & !s.give_up & !s.experiment & s.hypothesize'
     """
 
     def __init__(self, *args, **kwds):
@@ -598,13 +616,13 @@ class Strategy(object):
     def loadFromFile(self, filename):
         """ Load a strategy from a file. """
 
-        logging.info("Loading strategy from file '{}'...".format(filename))
+        ltlmop_logger.info("Loading strategy from file '{}'...".format(filename))
 
         tic = globalConfig.best_timer()
         self._loadFromFile(filename)
         toc = globalConfig.best_timer()
 
-        logging.info("Loaded in {} seconds.".format(toc-tic))
+        ltlmop_logger.info("Loaded in {} seconds.".format(toc-tic))
 
     def _loadFromFile(self, filename):
         """ The inner function that actually performs file loading
@@ -612,7 +630,7 @@ class Strategy(object):
 
         raise NotImplementedError("Use a subclass of Strategy")
 
-    def searchForStates(self, prop_assignments, state_list=None):
+    def searchForStates(self, prop_assignments, state_list=None, goal_id=None):
         """ Returns an iterator for the subset of all known states (or a subset
             specified in `state_list`) that satisfy `prop_assignments`. """
 
@@ -625,13 +643,23 @@ class Strategy(object):
 
         raise NotImplementedError("Use a subclass of Strategy")
 
-    def searchForOneState(self, prop_assignments, state_list=None):
+    def searchForOneState(self, prop_assignments, state_list=None, goal_id=None):
         """ Iterate through all known states (or a subset specified in `state_list`)
             and return the first one that matches `prop_assignments`.
 
             Returns None if no such state is found.  """
 
-        return next(self.searchForStates(prop_assignments, state_list), None)
+        if goal_id is not None:
+            for state in self.searchForStates(prop_assignments, state_list, goal_id):
+                if state.goal_id == goal_id:
+                    return state
+
+        # if goal_id is not specified or cannot find state with that goal_id            
+        for state in self.searchForStates(prop_assignments, state_list, goal_id):
+            return state
+
+        # return None if no matching states are found.
+        return None
 
     def exportAsDotFile(self, filename, regionMapping, starting_states=None):
         """ Output an explicit-state strategy to a .dot file of name `filename`.
@@ -695,6 +723,57 @@ class Strategy(object):
 
             # Close the digraph
             f_out.write("} \n")
+        
+    def findAllCycles(self):
+
+        """
+        Returns a list of lists of states forming cycles, or an empty list if strategy is acyclic
+        """
+
+
+        visited = set()  # list of visited nodes
+        st = {}      # dictionary maintaining the minimum spanning tree rooted at each node
+        cycles = []
+        
+        
+        
+        def loop_back(st, state, ancestor):
+            """
+            Finds a path from the state to an ancestor.
+            """
+            path = []
+            while (state != ancestor):
+                if state is None:
+                    return []
+                path.append(state)
+                state = st[state]
+            path.append(state)
+            path.reverse()
+            return path
+
+        def dfs(state):
+                visited.add(state)
+                # recursively explore the connected component
+                for s in self.findTransitionableStates({}, state):
+                    if s not in visited:
+                        st[s] = state
+                        dfs(s) #recursion
+                    else:
+                        if (st[state] != s):
+                            cycle = loop_back(st, state, s)
+                            if cycle:
+                                cycles.append(cycle)
+                                
+
+        for s in self.iterateOverStates():
+            if s not in visited:
+                st[s] = None # spanning tree rooted at that state
+                # explore this state's connected component
+                dfs(s)
+        return cycles
+
+        
+
 
 def TestLoadAndDump(spec_filename):
     import project
@@ -724,10 +803,10 @@ def TestLoadAndDump(spec_filename):
     strat.exportAsDotFile("strategy_test.dot", starting_states = [start_state])
 
 if __name__ == "__main__":
-    logging.info("Running doctests...")
+    ltlmop_logger.info("Running doctests...")
     import doctest
     doctest.testmod()
 
     if len(sys.argv) > 1:
-        logging.info("Running file load/dump test for {!r}...".format(sys.argv[1]))
+        ltlmop_logger.info("Running file load/dump test for {!r}...".format(sys.argv[1]))
         TestLoadAndDump(sys.argv[1])

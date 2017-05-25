@@ -3,10 +3,18 @@
 
 import re
 import strategy
-import logging
 import sys
 import time
 from collections import defaultdict
+
+# logger for ltlmop
+import logging
+ltlmop_logger = logging.getLogger('ltlmop_logger')
+
+
+############ ENV ASSUMPTION LEARNING ##############
+from copy import deepcopy
+###################################################
 
 class FSAStrategy(strategy.Strategy):
     """
@@ -67,6 +75,13 @@ class FSAStrategy(strategy.Strategy):
             new_state.state_id = match.group('state_id')
             new_state.goal_id = match.group('goal_id')
 
+            # Counterstrategies may have states without all proposition values
+            # defined, so we will leave them as None's.
+            # TODO: This weakens error-checking. Maybe make this only apply
+            # if specifically asked for when dealing with counter-strategies?
+            for prop_name in self.states.getPropositions(expand_domains=True):
+                new_state.setPropValue(prop_name, None)
+
             # A regex so we can iterate over "PROP = VALUE" terms
             p2 = re.compile(r"(?P<var>\w+):(?P<val>\d)", re.IGNORECASE|re.MULTILINE)
             for prop_setting in p2.finditer(match.group('conds')):
@@ -74,18 +89,25 @@ class FSAStrategy(strategy.Strategy):
                 # appropriate boolean values
                 prop_name, prop_value = prop_setting.groups()
 
-                #### TEMPORARY HACK: REMOVE ME AFTER OTHER COMPONENTS ARE UPDATED!!!
-                # Rewrite proposition names to make the old bitvector system work
-                # with the new one
-                prop_name = re.sub(r'^bit(\d+)$', r'region_b\1', prop_name)
-                #################################################################
+                try:
+                    if prop_value == "0":
+                        new_state.setPropValue(prop_name, False)
+                    elif prop_value == "1":
+                        new_state.setPropValue(prop_name, True)
+                except:
+                    #### TEMPORARY HACK: REMOVE ME AFTER OTHER COMPONENTS ARE UPDATED!!!
+                    # Rewrite proposition names to make the old bitvector system work
+                    # with the new one
+                    prop_name = re.sub(r'^bit(\d+)$', r'region_b\1', prop_name)
+                    prop_name = re.sub(r'^sbit(\d+)$', r'regionCompleted_b\1', prop_name)
+                    #################################################################
 
-                if prop_value == "0":
-                    new_state.setPropValue(prop_name, False)
-                elif prop_value == "1":
-                    new_state.setPropValue(prop_name, True)
-                else:
-                    raise ValueError("Proposition '{}' value of {!r} in state {} is invalid.".format(prop_name, prop_value, new_state.state_id))
+                    if prop_value == "0":
+                        new_state.setPropValue(prop_name, False)
+                    elif prop_value == "1":
+                        new_state.setPropValue(prop_name, True)
+                    else:
+                        raise ValueError("Proposition '{}' value of {!r} in state {} is invalid.".format(prop_name, prop_value, new_state.state_id))
 
             # Update mapping
             state_by_id[new_state.state_id] = new_state
@@ -109,9 +131,9 @@ class FSAStrategy(strategy.Strategy):
                 self.transitions[state_by_id[start]][state_by_id[end]] = True
 
         # All done, hooray!
-        logging.info("Loaded %d states.", len(self.states))
+        ltlmop_logger.info("Loaded %d states.", len(self.states))
 
-    def searchForStates(self, prop_assignments, state_list=None):
+    def searchForStates(self, prop_assignments, state_list=None, goal_id=None):
         """ Returns an iterator for the subset of all known states (or a subset
             specified in `state_list`) that satisfy `prop_assignments`. """
 

@@ -27,6 +27,11 @@ from hsubParsingUtils import parseCallString
 import lib.handlers.handlerTemplates as ht
 import lib.globalConfig
 from lib.hsubConfigObjects import ExperimentConfig, RobotConfig
+
+# logger for ltlmop
+import logging
+ltlmop_logger = logging.getLogger('ltlmop_logger')
+
 # begin wxGlade: extracode
 # end wxGlade
 
@@ -53,7 +58,7 @@ def drawParamConfigPane(target, method, proj):
         if p.para_type is None:
             continue
 
-        if p.para_type.lower() == "region":
+        if p.para_type.lower() == "region" and proj.rfi:
             r_names = [r.name for r in proj.rfi.regions if r.name.lower() != "boundary" and not r.isObstacle]
             param_controls[p] = wx.ComboBox(target, -1, choices=r_names, style=wx.CB_DROPDOWN)
 
@@ -878,7 +883,11 @@ class simSetupDialog(wx.Dialog):
             return
 
         # clean up prop_mapping of the current executing config
-        default_prop_mapping = self.hsub.getDefaultPropMapping(self.proj.all_sensors, self.proj.all_actuators)
+        if self.proj.rfi:
+            default_prop_mapping = self.hsub.getDefaultPropMapping(self.proj.all_sensors, self.proj.all_actuators, regions=self.proj.rfi.regions)
+        else:
+            default_prop_mapping = self.hsub.getDefaultPropMapping(self.proj.all_sensors, self.proj.all_actuators, regions=[])
+
         self.hsub.executing_config.normalizePropMapping(default_prop_mapping)
 
         # Save the config files
@@ -1077,7 +1086,7 @@ class addRobotDialog(wx.Dialog):
 
             if self.handler_combos[handler_type_class].GetStringSelection() == "":
                 # when neither the robot or the share folder has the handler loaded
-                logging.warning('Cannot find and handler config in the options for handler type {!r}'\
+                ltlmop_logger.warning('Cannot find and handler config in the options for handler type {!r}'\
                         .format(handler_type_class))
                 self.handler_buttons[handler_type_class].Enable(False)
 
@@ -1132,7 +1141,7 @@ class addRobotDialog(wx.Dialog):
                 if handler_config_changed is not None:
                     self.robot.handlers[htype] = handler_config_changed
                 else:
-                    logging.warning('Cannot find the selected handler config.')
+                    ltlmop_logger.warning('Cannot find the selected handler config.')
 
                 break
 
@@ -1274,10 +1283,19 @@ class propMappingDialog(wx.Dialog):
         # Set defaults as necessary
         for p in self.proj.all_sensors:
             if p not in mapping or self.mapping[p].strip() == "":
-                m = deepcopy(self.hsub.handler_configs["share"][ht.SensorHandler][0].getMethodByName("buttonPress"))
-                para = m.getParaByName("button_name")
-                para.setValue(p)
-                self.mapping[p] = self.hsub.method2String(m, "share")
+
+                # do sensor region Prop differently
+                if self.proj.rfi and p in [x.name+'_rc' for x in self.proj.rfi.regions]:
+                    m = deepcopy(self.hsub.handler_configs["share"][ht.SensorHandler][0].getMethodByName("inRegion"))
+                    para = m.getParaByName("regionName")
+                    para.setValue(p.replace('_rc',''))
+                    self.mapping[p] = self.hsub.method2String(m, "share")
+                else:
+                    m = deepcopy(self.hsub.handler_configs["share"][ht.SensorHandler][0].getMethodByName("buttonPress"))
+                    para = m.getParaByName("button_name")
+                    para.setValue(p)
+                    self.mapping[p] = self.hsub.method2String(m, "share")
+
 
         for p in self.proj.all_actuators:
             if p not in mapping or self.mapping[p].strip() == "":
