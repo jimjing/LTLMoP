@@ -170,13 +170,13 @@ class AnalysisResultsDialog(wx.Dialog):
         to_highlight         : return from analysis that the specs with problems
         """
 
-        # Create the root        
+        # Create the root
         self.tree_ctrl_traceback.DeleteAllItems()
         root_node = self.tree_ctrl_traceback.AddRoot("Root")
         LTL  = {}
         for key,value in LTL2SpecLineNumber.iteritems():
             LTL[ value ] = key.replace('\t','').replace('\n','')
-        
+
         # highlight guilty specs
         highlightColor = "#FF9900"
         guilty_key = {}
@@ -185,53 +185,53 @@ class AnalysisResultsDialog(wx.Dialog):
                 guilty_key[h_item[0].title() + h_item[1].title()] = h_item[2]
             else:
                 guilty_key[h_item[0].title() + h_item[1].title()] = None
-        
+
         hightlightEnvTrans = False
         guiltyLinesToHighlight = []
         for specType in guilty_key.keys():
             if specType == 'EnvTrans':
                 hightlightEnvTrans = True
             elif specType == 'EnvGoals' or specType =='SysGoals':
-                guiltyLinesToHighlight.append(tracebackTree[specType][guilty_key[specType]])  
+                guiltyLinesToHighlight.append(tracebackTree[specType][guilty_key[specType]])
             else:
                 for x in tracebackTree[specType]:
                     guiltyLinesToHighlight.append(x)
-        
+
         print guiltyLinesToHighlight
-        
+
         for lineNo, EngSpec in enumerate(structuredSpec, start=1):
-            # Build the traceback tree           
-            if lineNo in tracebackTree['EnvTrans']: 
-                # Add a node for each input line    
-                input_node = self.tree_ctrl_traceback.AppendItem(root_node, EngSpec + "<--(REPLACED)") 
-                 # white out original env transition spec 
-                self.tree_ctrl_traceback.SetItemTextColour(input_node,"#a9a8a8")  
+            # Build the traceback tree
+            if lineNo in tracebackTree['EnvTrans']:
+                # Add a node for each input line
+                input_node = self.tree_ctrl_traceback.AppendItem(root_node, EngSpec + "<--(REPLACED)")
+                 # white out original env transition spec
+                self.tree_ctrl_traceback.SetItemTextColour(input_node,"#a9a8a8")
             else:
-                # Add a node for each input line    
-                input_node = self.tree_ctrl_traceback.AppendItem(root_node, EngSpec) 
-                
-            # add LTL as formula under the structured English if it exists   
-            try:             
+                # Add a node for each input line
+                input_node = self.tree_ctrl_traceback.AppendItem(root_node, EngSpec)
+
+            # add LTL as formula under the structured English if it exists
+            try:
                 command_node = self.tree_ctrl_traceback.AppendItem(input_node, LTL[ lineNo ])
-                if lineNo in tracebackTree['EnvTrans']: 
-                    self.tree_ctrl_traceback.SetItemTextColour(command_node,"#a9a8a8") 
+                if lineNo in tracebackTree['EnvTrans']:
+                    self.tree_ctrl_traceback.SetItemTextColour(command_node,"#a9a8a8")
             except:
                 pass
-                
+
             # hightlight guilty specs
             if lineNo in guiltyLinesToHighlight:
                 self.tree_ctrl_traceback.SetItemBackgroundColour(input_node,highlightColor) # pale pink
                 self.tree_ctrl_traceback.SetItemBackgroundColour(command_node,highlightColor) # pale pink
-            
+
         # add the latest assumption generation here
-        input_node = self.tree_ctrl_traceback.AppendItem(root_node, "NEWLY GENERATED ENV SAFETY ASSUMPTIONS") 
-        command_node = self.tree_ctrl_traceback.AppendItem(input_node, ltlSpec['EnvTrans'].replace('\t','').replace('\n','')) 
-        
+        input_node = self.tree_ctrl_traceback.AppendItem(root_node, "NEWLY GENERATED ENV SAFETY ASSUMPTIONS")
+        command_node = self.tree_ctrl_traceback.AppendItem(input_node, ltlSpec['EnvTrans'].replace('\t','').replace('\n',''))
+
         # highlight guilty specs
         if hightlightEnvTrans == True:
             self.tree_ctrl_traceback.SetItemBackgroundColour(input_node,highlightColor) # pale pink
             self.tree_ctrl_traceback.SetItemBackgroundColour(command_node,highlightColor) # pale pink
-                        
+
         self.Layout()
     #################################################
 
@@ -339,7 +339,7 @@ class SpecEditorFrame(wx.Frame):
         # begin wxGlade: SpecEditorFrame.__init__
         kwds["style"] = wx.DEFAULT_FRAME_STYLE
         wx.Frame.__init__(self, *args, **kwds)
-        
+
         # Menu Bar
         self.frame_1_menubar = wx.MenuBar()
         global MENU_IMPORT_REGION; MENU_IMPORT_REGION = wx.NewId()
@@ -1306,22 +1306,22 @@ class SpecEditorFrame(wx.Frame):
                 self.appendLog("Automaton successfully synthesized for instantaneous actions.\n", "GREEN")
             else:
                 self.appendLog("ERROR: Specification was unsynthesizable (unrealizable/unsatisfiable) for instantaneous actions.\n", "RED")
-        
+
             ############# ENV Assumption Learning ###################
             return
             if not compiler.realizable and not analyze:
                 self.appendLog("\tNow we are changing the environment safety assumptions from [](TRUE) to [](FALSE).\n","BLUE")
-                #path_ltl =  os.path.join(self.proj.project_root,self.proj.getFilenamePrefix()+".ltl")  # path of ltl file to be passed to the function 
+                #path_ltl =  os.path.join(self.proj.project_root,self.proj.getFilenamePrefix()+".ltl")  # path of ltl file to be passed to the function
                 #LTLViolationCheck = LTLcheck.LTL_Check(path_ltl,compiler.LTL2SpecLineNumber,spec)
                 #LTLViolationCheck.modify_LTL_file()
                 ltl_filename = self.proj.getFilenamePrefix() + ".ltl"
                 self.spec['EnvTrans'] = '\t[](FALSE) & \n'
-                 
+
                 # putting all the LTL fragments together (see specCompiler.py to view details of these fragments)
                 #LTLspec_env = "( " + self.spec["EnvInit"] + ")&\n" + self.spec["EnvTrans"] + self.spec["EnvGoals"]
                 LTLspec_env = self.spec["EnvTrans"] + self.spec["EnvGoals"]
                 LTLspec_sys = "( " + self.spec["SysInit"] + ")&\n" + self.spec["SysTrans"] + self.spec["SysGoals"]
-                
+
                 LTLspec_sys += "\n&\n" + self.spec['InitRegionSanityCheck']
 
                 LTLspec_sys += "\n&\n" + self.spec['Topo']
@@ -1330,10 +1330,10 @@ class SpecEditorFrame(wx.Frame):
                 import createJTLVinput
                 createJTLVinput.createLTLfile(ltl_filename, LTLspec_env, LTLspec_sys)
                 realizable, realizableFS, output = compiler._synthesize()
-            
+
                 if realizable:
                     self.appendLog("\tAutomaton successfully synthesized for instantaneous actions.\n", "GREEN")
-                    
+
                     # Load in LTL file to the LTL tab
                     if os.path.exists(self.proj.getFilenamePrefix()+".ltl"):
                         f = open(self.proj.getFilenamePrefix()+".ltl","r")
@@ -1343,7 +1343,7 @@ class SpecEditorFrame(wx.Frame):
                 else:
                     self.appendLog("\tERROR: Specification was unsynthesizable (unrealizable/unsatisfiable) for instantaneous actions.\n", "RED")
             #########################################################
-        
+
         # Check for trivial aut
         if compiler.realizable or compiler.realizableFS:
             if not compiler._autIsNonTrivial():
@@ -1506,12 +1506,12 @@ class SpecEditorFrame(wx.Frame):
         else:
             strat = strategy.createStrategyFromFile(self.proj.getStrategyFilename(),
                                                 self.proj.enabled_sensors,
-                                                self.proj.enabled_actuators + self.proj.all_customs)
+                                                self.proj.enabled_actuators + self.proj.all_customs + [x.name for x in self.proj.rfi.regions] + ["_l_a_c_v_1", "_is_infty_cost_Pre"])
 
         strat.exportAsDotFile(self.proj.getFilenamePrefix()+".dot", self.proj.regionMapping)
 
     def _exportSMVFile(self):
-        aut.writeSMV(self.proj.getFilenamePrefix()+"MC.smv")  
+        aut.writeSMV(self.proj.getFilenamePrefix()+"MC.smv")
 
 
 
@@ -1638,7 +1638,7 @@ class SpecEditorFrame(wx.Frame):
 #                    for lineNo in self.tracebackTree[tb_key]:
 #                        self.text_ctrl_spec.MarkerAdd(lineNo-1, MARKER_INIT)
                 ##################################
-                
+
         elif self.proj.compile_options["parser"] == "slurp":
             for frag in self.to_highlight:
                 self.analysisDialog.markFragments(*frag)
@@ -1666,10 +1666,10 @@ class SpecEditorFrame(wx.Frame):
         guilty = self.compiler._coreFinding(self.to_highlight, self.unsat, self.badInit)
 
         self.highlightCores(guilty, self.compiler)
-        
+
         #if not self.unsat:
         to_highlight = self.compiler._iterateCores()
-    
+
         #highlight guilty transitions
         if self.proj.compile_options["parser"] == "structured":
             for h_item in to_highlight:

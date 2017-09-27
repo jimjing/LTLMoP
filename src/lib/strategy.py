@@ -654,7 +654,7 @@ class Strategy(object):
                 if state.goal_id == goal_id:
                     return state
 
-        # if goal_id is not specified or cannot find state with that goal_id            
+        # if goal_id is not specified or cannot find state with that goal_id
         for state in self.searchForStates(prop_assignments, state_list, goal_id):
             return state
 
@@ -703,7 +703,7 @@ class Strategy(object):
                     continue
 
                 state_label = "\\n".join((pprint_assignment(k, v)
-                                          for k, v in this_state.getOutputs().iteritems()))
+                                          for k, v in this_state.getOutputs().iteritems() if (k not in ["_l_a_c_v_1", "_is_infty_cost_Pre", "boundary"] and v)))
                 state_label += "\\n[Goal #{}]".format(this_state.goal_id)
                 f_out.write('\t{} [style="bold", width=0, height=0, fontsize=20, label="{}"];\n'\
                             .format(this_state.getName(), state_label))
@@ -723,7 +723,7 @@ class Strategy(object):
 
             # Close the digraph
             f_out.write("} \n")
-        
+
     def findAllCycles(self):
 
         """
@@ -734,9 +734,9 @@ class Strategy(object):
         visited = set()  # list of visited nodes
         st = {}      # dictionary maintaining the minimum spanning tree rooted at each node
         cycles = []
-        
-        
-        
+
+
+
         def loop_back(st, state, ancestor):
             """
             Finds a path from the state to an ancestor.
@@ -763,7 +763,7 @@ class Strategy(object):
                             cycle = loop_back(st, state, s)
                             if cycle:
                                 cycles.append(cycle)
-                                
+
 
         for s in self.iterateOverStates():
             if s not in visited:
@@ -772,7 +772,7 @@ class Strategy(object):
                 dfs(s)
         return cycles
 
-        
+
 
 
 def TestLoadAndDump(spec_filename):

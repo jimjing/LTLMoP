@@ -60,7 +60,7 @@ import specCompiler
 
 import LTLParser.LTLcheck
 import logging
-import LTLParser.LTLFormula 
+import LTLParser.LTLFormula
 #################################
 
 # -----------------------------------------#
@@ -132,12 +132,12 @@ class LTLMoPExecutor(ExecutorStrategyExtensions, ExecutorResynthesisExtensions, 
 
         self.current_outputs = {}     # keep track on current outputs values (for actuations)
         ########## ENV Assumption Learning ######
-        self.compiler = None                   
+        self.compiler = None
         self.LTLViolationCheck = None
         self.LTLViolationCheckPossibleStates = None
         self.analysisDialog = None
         self.to_highlight = None
-        self.tracebackTree = None               # tells you init, trans and sys line no 
+        self.tracebackTree = None               # tells you init, trans and sys line no
         self.path_LTLfile = None                    # path of the .ltl file
         self.LTL2SpecLineNumber = None          # mapping from LTL to structed english
         self.userAddedEnvLivenessEnglish = []          # keep track of liveness added by the user in English
@@ -145,7 +145,7 @@ class LTLMoPExecutor(ExecutorStrategyExtensions, ExecutorResynthesisExtensions, 
         self.originalLTLSpec      = {}          # save the original Spec for exporting
         self.LTLSpec  = {}
         self.sensor_strategy = None
-        
+
         ############# NEW THING FOR THRESHOLDING FOR RESYNTHESIS
         self.envViolationCount = 0
 
@@ -153,7 +153,7 @@ class LTLMoPExecutor(ExecutorStrategyExtensions, ExecutorResynthesisExtensions, 
         self.recovery = False
         self.ENVcharacterization = True
         #########################################
-        
+
         # -----------------------------------------#
         # -------- two_robot_negotiation ----------#
         # -----------------------------------------#
@@ -435,7 +435,8 @@ class LTLMoPExecutor(ExecutorStrategyExtensions, ExecutorResynthesisExtensions, 
             #############
             self.spec, self.tracebackTree, response = self.compiler._writeLTLFile()#False)
             self.originalLTLSpec  = self.spec.copy()
-            realizable, realizableFS, output  = self.compiler._synthesize()
+            #realizable, realizableFS, output  = self.compiler._synthesize()
+            realizable = True
 
             # initializing dialog in simGUI when violation occurs
             self.simGUILearningDialog = ["Added current inputs", "Added current and incoming inputs", "Added current, incoming inputs and current outputs"]
@@ -625,7 +626,7 @@ class LTLMoPExecutor(ExecutorStrategyExtensions, ExecutorResynthesisExtensions, 
         self.sensor_strategy = new_strategy.states.addNewState()
 
         # resynthesize if cannot find initial state
-        if init_state is None: 
+        if init_state is None:
 
             # check if execution is paused
             if not self.runStrategy.isSet():
@@ -661,7 +662,7 @@ class LTLMoPExecutor(ExecutorStrategyExtensions, ExecutorResynthesisExtensions, 
                             ltlmop_logger.debug('Setting violation timeStamp')
                             time.sleep(1)
 
-            init_state, new_strategy  = self.addStatetoEnvSafety(self.sensor_strategy, firstRun)            
+            init_state, new_strategy  = self.addStatetoEnvSafety(self.sensor_strategy, firstRun)
         #############################################
         if init_state is None:
             ltlmop_logger.error("No suitable initial state found; unable to execute. Quitting...")
@@ -753,10 +754,10 @@ class LTLMoPExecutor(ExecutorStrategyExtensions, ExecutorResynthesisExtensions, 
                 self.stopMotionAndAction()
 
                 ###### ENV VIOLATION CHECK ######
-                # pop up the analysis dialog                
+                # pop up the analysis dialog
                 #self.onMenuAnalyze(enableResynthesis = False, exportSpecification = True)
                 ################################
-                    
+
                 # wait for either the FSA to unpause or for termination
                 while (not self.runStrategy.wait(0.1)) and self.alive.isSet():
                     pass
@@ -770,7 +771,7 @@ class LTLMoPExecutor(ExecutorStrategyExtensions, ExecutorResynthesisExtensions, 
             self.prev_outputs = self.strategy.current_state.getOutputs()
 
             tic = self.timer_func()
-            ###### ENV VIOLATION CHECK ######  
+            ###### ENV VIOLATION CHECK ######
             last_next_states = self.last_next_states
 
             #check if goal is satisfied
@@ -1188,7 +1189,7 @@ class LTLMoPExecutor(ExecutorStrategyExtensions, ExecutorResynthesisExtensions, 
                 #self.currentViolationLineNo = self.LTLViolationCheck.violated_spec_line_no[:]
 
             #################################
-            
+
             toc = self.timer_func()
 
             #self.checkForInternalFlags()

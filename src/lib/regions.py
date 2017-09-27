@@ -86,10 +86,17 @@ class Point(object):
     def __list__(self):
         return [self.x,self.y]
 
+    def dist(self, pt):
+        if isinstance(other, Point):
+            return numpy.linalg.norm(self-pt)
+        else:
+            raise TypeError("Distance can only be calculated with other points")
+
+
 class Size(Point):
     def __init__(self, w, h):
         super(Size, self).__init__(w, h)
-    
+
     def GetWidth(self):  return self.x
     def GetHeight(self): return self.y
 
@@ -105,7 +112,7 @@ class Color():
 
     def __getitem__(self, idx):
         return self.color[idx]
-    
+
     def Red(self):   return self.color[0]
     def Green(self): return self.color[1]
     def Blue(self):  return self.color[2]
@@ -124,7 +131,7 @@ class Color():
             self.color = colorMapping[name.upper()]
         else:
             raise NotImplementedError("Color '%s' not recognized" % name)
-            
+
 ############################################################
 
 # Direction IDs (for defining convexity):
@@ -202,12 +209,12 @@ class RegionFileInterface(object):
         # First get all region names of the form we're interested in
         nums = []
         p = re.compile(r"^r(?P<num>\d+)$")
-        
+
         for region in self.regions:
             m = p.match(region.name)
             if not m: continue
             nums.append(int(m.group('num')))
-        
+
         nums.sort()
 
         last = 0
@@ -220,7 +227,7 @@ class RegionFileInterface(object):
             else:
                 # There's a gap we can fill
                 return last + 1
-        
+
         # Everything was full, so let's just append to the end
         return last + 1
 
@@ -231,7 +238,7 @@ class RegionFileInterface(object):
         """
         If we have a face of region obj1 that overlaps with the face of another region obj2,
         (i.e. the obj1 face is collinear with and has at least one point on the obj2 face)
-        we split the larger face into two or three parts as appropriate. 
+        we split the larger face into two or three parts as appropriate.
         """
 
         # Doesn't make any sense to check against self
@@ -258,17 +265,17 @@ class RegionFileInterface(object):
                         # Figure out where we would add a new point
                         idxa = points.index(other_pta)
                         idxb = points.index(other_ptb)
-                        if (idxa == 0 and idxb == len(points)-1) or (idxb == 0 and idxa == len(points)-1):  
+                        if (idxa == 0 and idxb == len(points)-1) or (idxb == 0 and idxa == len(points)-1):
                             idx = 0
                         else:
                             idx = max(idxa, idxb)
 
                         # Add a point if appropriate
-                        if on_segment_a and not (pta == other_pta or pta == other_ptb): 
+                        if on_segment_a and not (pta == other_pta or pta == other_ptb):
                             obj2.addPoint(pta-obj2.position, idx)
                             clean = False
                             break
-                        if on_segment_b and not (ptb == other_pta or ptb == other_ptb): 
+                        if on_segment_b and not (ptb == other_pta or ptb == other_ptb):
                             obj2.addPoint(ptb-obj2.position, idx)
                             clean = False
                             break
@@ -287,11 +294,11 @@ class RegionFileInterface(object):
         transitionFaces = {} # This is just a list of faces to draw dotted lines on
 
         for obj in self.regions:
-            for face in obj.getFaces(includeHole=True):                
+            for face in obj.getFaces(includeHole=True):
                 if face not in transitionFaces: transitionFaces[face] = []
                 ignore = False
                 for other_obj in transitionFaces[face]:
-                    # Prevent detection of adjoining faces when Duplicate 
+                    # Prevent detection of adjoining faces when Duplicate
                     # command creates object on top of itself
                     if other_obj.position == obj.position and \
                        [x for x in other_obj.getPoints()] == [x for x in obj.getPoints()]:
@@ -455,7 +462,7 @@ class RegionFileInterface(object):
 
     def writeFile(self, filename):
         """
-        File format is described inside the comments variable. 
+        File format is described inside the comments variable.
         """
 
         comments = {"FILE_HEADER":"This is a region definition file for the LTLMoP toolkit.\n" +
@@ -465,8 +472,8 @@ class RegionFileInterface(object):
                     "Regions": "Stored as JSON string",
                     "Transitions": "Region 1 Name, Region 2 Name, Bidirectional transition faces (face1_x1, face1_y1, face1_x2, face1_y2, face2_x1, ...)",
                     "CalibrationPoints": "Vertices to use for map calibration: (vertex_region_name, vertex_index)",
-                    "Obstacles": "Names of regions to treat as obstacles"}    
-    
+                    "Obstacles": "Names of regions to treat as obstacles"}
+
         regionData = []
         for r in self.regions:
             d = r.getData()
@@ -476,7 +483,7 @@ class RegionFileInterface(object):
             regionData.append(d)
         je = prettierJSONEncoder(indent=4)
         regionData = [je.encode(regionData)]
-       
+
         transitionData = []
         for region1, destinations in enumerate(self.transitions):
             # Note: We are assuming all transitions are bidirectional so we only have to include
@@ -542,9 +549,9 @@ class RegionFileInterface(object):
             newRegion = Region()
             if compatMode:
                 regionData = rd.split("\t");
-                newRegion.setDataOld(regionData)    
+                newRegion.setDataOld(regionData)
             else:
-                newRegion.setData(rd)    
+                newRegion.setData(rd)
 
             self.regions.append(newRegion)
 
@@ -559,7 +566,7 @@ class RegionFileInterface(object):
                 p1 = Point(float(transData[i]), float(transData[i+1]))
                 p2 = Point(float(transData[i+2]), float(transData[i+3]))
                 faces.append(frozenset((p1, p2)))
-                
+
             # During adjacency matrix reconstruction, we'll mirror over the diagonal
             self.transitions[region1][region2] = faces
             self.transitions[region2][region1] = faces
@@ -572,19 +579,19 @@ class RegionFileInterface(object):
         if "Obstacles" in data:
             for rname in data["Obstacles"]:
                 self.regions[self.indexOfRegionWithName(rname)].isObstacle = True
-            
+
         self.filename = filename
 
         return True
-   
+
 ############################################################
- 
+
 class Region(object):
     """ A rectangular or polygonal region, defined by the following properties:
 
             - 'name'          Region name
             - 'type'          What type of region this is (rect or poly)
-            - 'position'      The position of the object within the document 
+            - 'position'      The position of the object within the document
                               (i.e., the top-left corner of the region's bounding-box)
             - 'size'          The size of the object's bounding box
             - 'color'         Color to use for drawing the region
@@ -655,7 +662,7 @@ class Region(object):
         """
         Recalculate the bounding box for our object
         """
-        
+
         # Find how much our bounding box has shifted in relation to the old one
         for i, pt in enumerate(self.getPoints(relative=True)):
             if i == 0:
@@ -674,14 +681,14 @@ class Region(object):
                     topLeftY = pt.y
                 if pt.y > botRightY:
                     botRightY = pt.y
-    
-        if self.type == reg_POLY:    
+
+        if self.type == reg_POLY:
             # Shift our vertices to align with the new bounding box
             self.pointArray = map(lambda x: x-Point(topLeftX, topLeftY), self.pointArray)
             # Shift holes vertices to align with the new bounding box
             for i,hole in enumerate(self.holeList):
                 self.holeList[i] =  map(lambda x: x-Point(topLeftX, topLeftY),self.holeList[i])
-                
+
 
         # Store the new bounding box
         self.position = self.position + Point(topLeftX, topLeftY)
@@ -743,7 +750,7 @@ class Region(object):
             data['holeList'] = []
             for hole in self.holeList:
                 data['holeList'].append([(pt.x, pt.y) for pt in hole])
-                
+
         data['alignmentPoints'] = [i for i, isAP in enumerate(self.alignmentPoints) if isAP]
 
         data['isObstacle'] = self.isObstacle
@@ -754,7 +761,7 @@ class Region(object):
         """ Set the object's internal data.
 
             'data' is a copy of the object's saved data, as returned by
-            getData() above.  This is used for undo and to restore a 
+            getData() above.  This is used for undo and to restore a
             previously saved region.
         """
         self.name = data['name']
@@ -911,7 +918,7 @@ class Region(object):
             # Rectangles are even easier!
             cx = self.size.GetWidth()/2 + self.position.x
             cy = self.size.GetHeight()/2 + self.position.y
-        
+
         return Point(cx, cy)
 
     # =======================
@@ -970,7 +977,7 @@ class Region(object):
         """
         if boundFunc is None:
             boundFunc = self._pointInSelRect
-        
+
         for index, pt in enumerate(self.getPoints()):
             if boundFunc(x, y, pt.x, pt.y):
                 return index    # For rectangles, the index corresponds to the handle ID by definition
@@ -1016,7 +1023,7 @@ class Region(object):
             y2_new=y2
         elif y1 == y2: # horizontal line
             if center[1]>y1:
-                
+
                 y1_new=y1-distance
                 y2_new=y2-distance
             else:
@@ -1028,7 +1035,7 @@ class Region(object):
             faceSlope=(y1-y2)/(x1-x2*1.0)
             # find slope that is orthogonal to the face
             orthSlope=(-1.0)/faceSlope
-            
+
             # figure out which direction the boundary should be shifted to
             offsetX=distance*math.sqrt(1/(1+orthSlope**2))
             offsetY=distance*math.sqrt(1/(1+1/orthSlope**2))
@@ -1058,19 +1065,19 @@ class Region(object):
                     y1_new=y1+offsetY
                     x2_new=x2-offsetX
                     y2_new=y2+offsetY
-                    
+
         return Point(int(x1_new), int(y1_new)), Point(int(x2_new), int(y2_new))
-        
+
     def findRegionNear(self, distance, mode='underEstimate',name='newRegion'):
         """
         Given a region object and a distance value, return a new region object which covers
         the area that is within the 'distance' away from the given region.
         """
-        
+
         if distance<0:
             print "The distance cannot be negative."
             return
-            
+
         newRegion = Region()
         # the new region will have most features  same as the old one
         newRegion.name = name
@@ -1078,50 +1085,50 @@ class Region(object):
         newRegion.color             = Color(255-self.color[0], 255-self.color[1], 255-self.color[2])
         newRegion.pointArray        = []
         center=self.getCenter()
-        
+
         if mode == 'overEstimate':
             for i,pt in enumerate(self.getPoints()):
                 twoFaces = [face for face in self.getFaces() if pt in face] # faces that connected by pt
-                        
+
                 face1_pt1_new,face1_pt2_new = self.findPointsNear(twoFaces[0], center, distance)
                 face2_pt1_new,face2_pt2_new = self.findPointsNear(twoFaces[1], center, distance)
-                
-                
+
+
                 if math.sqrt((face1_pt1_new.x-pt.x)**2+(face1_pt1_new.y-pt.y)**2) > math.sqrt((face1_pt2_new.x-pt.x)**2+(face1_pt2_new.y-pt.y)**2):
                     pt1 = face1_pt2_new
                 else:
                     pt1 = face1_pt1_new
-                    
+
                 if math.sqrt((face2_pt1_new.x-pt.x)**2+(face2_pt1_new.y-pt.y)**2) > math.sqrt((face2_pt2_new.x-pt.x)**2+(face2_pt2_new.y-pt.y)**2):
                     pt2 = face2_pt2_new
                 else:
                     pt2 = face2_pt1_new
-                    
+
                 pt1_new, pt2_new = self.findPointsNear((pt1,pt2), center, distance-math.sqrt(distance**2-((pt1.x-pt2.x)**2+(pt1.y-pt2.y)**2)/4))
-        
+
                 #newRegion.pointArray.append(pt1_new)
                 #newRegion.pointArray.append(pt2_new)
-                
+
                 newTwoFaces = [(face1_pt1_new,face1_pt2_new),
                                (face2_pt1_new,face2_pt2_new)]
                 interPoint = self.faceAndFaceIntersection(newTwoFaces[0],tuple(sorted((pt1_new,pt2_new))))
                 newRegion.pointArray.append(interPoint)
                 interPoint = self.faceAndFaceIntersection(newTwoFaces[1],tuple(sorted((pt1_new,pt2_new))))
                 newRegion.pointArray.append(interPoint)
-                    
+
         # TODO: fix this
         # put the vertex in the right order
         poly = Polygon.Utils.convexHull(Polygon.Polygon(newRegion.pointArray))
         #poly = Polygon.Polygon(newRegion.pointArray)
         newRegion.pointArray = [Point(*x) for x in Polygon.Utils.pointList(poly)]
-        newRegion.alignmentPoints   = [False] * len([x for x in newRegion.getPoints()])    
+        newRegion.alignmentPoints   = [False] * len([x for x in newRegion.getPoints()])
 
         newRegion.recalcBoundingBox()
 
         return newRegion
-        
-        
-        
+
+
+
     def faceAndFaceIntersection(self,face1,face2):
         # http://www.topcoder.com/tc?module=Static&d1=tutorials&d2=geometry2
         a = [(face[1][1] - face[0][1]) for face in [face1, face2]]
@@ -1138,11 +1145,11 @@ class Region(object):
             y = float(a[0]*c[1] - a[1]*c[0])/det
 
         return Point(x,y)
-        
+
     #
     #    # calculate the functions of the lines at the faces
     #    # function is in format of y = Ax+b
-    #    
+    #
     #    if face1[0][0] == face1[1][0]:
     #        x1=float(face2[0][0])
     #        y1=float(face2[0][1])
@@ -1150,7 +1157,7 @@ class Region(object):
     #        y2=float(face2[1][1])
     #        line2_A = (y2-y1)/(x2-x1)
     #        line2_b = y1-x1*(y2-y1)/(x2-x1)
-    #        
+    #
     #        interPoint = wx.Point(int(face1[0][0]),int(line2_A*face1[0][0]+line2_b))
     #    elif face2[0][0] == face2[1][0]:
     #        x1=float(face1[0][0])
@@ -1159,7 +1166,7 @@ class Region(object):
     #        y2=float(face1[1][1])
     #        line1_A = (y2-y1)/(x2-x1)
     #        line1_b = y1-x1*(y2-y1)/(x2-x1)
-    #        
+    #
     #        interPoint = wx.Point(int(face2[0][0]),int(line1_A*face2[0][0]+line1_b))
     #    else:
     #        x1=float(face1[0][0])
@@ -1168,17 +1175,17 @@ class Region(object):
     #        y2=float(face1[1][1])
     #        line1_A = (y2-y1)/(x2-x1)
     #        line1_b = y1-x1*(y2-y1)/(x2-x1)
-    #        
+    #
     #        x1=float(face2[0][0])
     #        y1=float(face2[0][1])
     #        x2=float(face2[1][0])
     #        y2=float(face2[1][1])
     #        line2_A = (y2-y1)/(x2-x1)
     #        line2_b = y1-x1*(y2-y1)/(x2-x1)
-    #        
+    #
     #        interPoint_x = (line2_b-line1_b)/(line2_A-line1_A)
     #        interPoint = wx.Point(int(interPoint_x),int(line1_A*interPoint_x+line1_b))
-    #        
+    #
     #    return interPoint
 
 
@@ -1192,15 +1199,15 @@ def findRegionBetween(regionA, regionB,name = 'newRegion'):
     # the new region will have most features  same as the old one
     newRegion.name = name
     newRegion.type              = reg_POLY
-    
+
     polyA = Polygon.Polygon([x for x in regionA.getPoints()])
     polyB = Polygon.Polygon([x for x in regionB.getPoints()])
-    
+
     betw_AB = Polygon.Utils.convexHull(polyA+polyB)-polyA-polyB
-    
+
     newRegion.pointArray = [Point(*x) for x in Polygon.Utils.pointList(betw_AB)]
-    newRegion.alignmentPoints   = [False] * len([x for x in newRegion.getPoints()])    
-    
+    newRegion.alignmentPoints   = [False] * len([x for x in newRegion.getPoints()])
+
     newRegion.recalcBoundingBox()
 
     return newRegion
@@ -1230,7 +1237,7 @@ def pointLineIntersection(pt1, pt2, test_pt):
         xi = (x1*c1 - xm*c2 - y1 + ym)/(c1 - c2)
         yi = y1 + c1*(xi - x1)
         d = (xm - xi)**2 + (ym - yi)**2
-        on_segment = min(x1,x2) < xi < max(x1,x2) 
+        on_segment = min(x1,x2) < xi < max(x1,x2)
 
     return [on_segment, d, Point(xi, yi)]
 
