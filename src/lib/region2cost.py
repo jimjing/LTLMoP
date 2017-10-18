@@ -40,6 +40,8 @@ def safetyLTLFromRegion(rfi, r_from, r_to):
     text_list = []
     for r in rfi.regions:
         if r.name == "boundary": continue
+        if r.isObstacle:
+            continue
         if r == r_from:
             text_list.append(r.name)
             text_list.append("! " + r.name + "'")
