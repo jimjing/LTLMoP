@@ -1,0 +1,507 @@
+# This is a region definition file for the LTLMoP toolkit.
+# Format details are described at the beginning of each section below.
+# Note that all values are separated by *tabs*.
+
+Background: # Relative path of background image file
+None
+
+CalibrationPoints: # Vertices to use for map calibration: (vertex_region_name, vertex_index)
+
+Obstacles: # Names of regions to treat as obstacles
+r1
+
+Regions: # Stored as JSON string
+[
+    {
+        "name": "boundary", 
+        "color": [
+            255, 
+            128, 
+            0
+        ], 
+        "holeList": [], 
+        "height": 0, 
+        "points": [
+            [
+                896.0, 
+                534.0
+            ], 
+            [
+                868.0, 
+                181.0
+            ], 
+            [
+                749.0, 
+                0.0
+            ], 
+            [
+                534.0, 
+                0.0
+            ], 
+            [
+                132.0, 
+                27.0
+            ], 
+            [
+                57.0, 
+                38.0
+            ], 
+            [
+                0.0, 
+                97.0
+            ], 
+            [
+                80.0, 
+                147.0
+            ], 
+            [
+                171.0, 
+                273.0
+            ], 
+            [
+                449.0, 
+                469.0
+            ], 
+            [
+                536.0, 
+                503.0
+            ], 
+            [
+                708.0, 
+                554.0
+            ]
+        ], 
+        "position": [
+            137.0, 
+            72.0
+        ], 
+        "type": "poly", 
+        "size": [
+            896.0, 
+            554.0
+        ]
+    }, 
+    {
+        "name": "r1", 
+        "color": [
+            255, 
+            0, 
+            0
+        ], 
+        "holeList": [], 
+        "height": 0.0, 
+        "points": [
+            [
+                0.0, 
+                54.0
+            ], 
+            [
+                100.0, 
+                136.0
+            ], 
+            [
+                336.0, 
+                299.0
+            ], 
+            [
+                404.0, 
+                365.0
+            ], 
+            [
+                522.0, 
+                341.0
+            ], 
+            [
+                590.0, 
+                124.0
+            ], 
+            [
+                530.0, 
+                0.0
+            ], 
+            [
+                251.0, 
+                23.0
+            ]
+        ], 
+        "position": [
+            306.0, 
+            152.0
+        ], 
+        "type": "poly", 
+        "size": [
+            590.0, 
+            365.0
+        ]
+    }, 
+    {
+        "name": "O3", 
+        "color": [
+            255, 
+            255, 
+            0
+        ], 
+        "holeList": [], 
+        "height": 0.0, 
+        "points": [
+            [
+                169.0, 
+                181.0
+            ], 
+            [
+                60.0, 
+                204.0
+            ], 
+            [
+                0.0, 
+                80.0
+            ], 
+            [
+                50.0, 
+                0.0
+            ]
+        ], 
+        "position": [
+            836.0, 
+            72.0
+        ], 
+        "type": "poly", 
+        "size": [
+            169.0, 
+            204.0
+        ]
+    }, 
+    {
+        "name": "O2", 
+        "color": [
+            255, 
+            0, 
+            0
+        ], 
+        "holeList": [], 
+        "height": 0.0, 
+        "points": [
+            [
+                114.0, 
+                0.0
+            ], 
+            [
+                329, 
+                0
+            ], 
+            [
+                279, 
+                80
+            ], 
+            [
+                0.0, 
+                103.0
+            ]
+        ], 
+        "position": [
+            557.0, 
+            72.0
+        ], 
+        "type": "poly", 
+        "size": [
+            329.0, 
+            103.0
+        ]
+    }, 
+    {
+        "name": "building", 
+        "color": [
+            255, 
+            128, 
+            0
+        ], 
+        "holeList": [], 
+        "height": 0.0, 
+        "points": [
+            [
+                98.0, 
+                0.0
+            ], 
+            [
+                334.0, 
+                163.0
+            ], 
+            [
+                278.0, 
+                253.0
+            ], 
+            [
+                0.0, 
+                57.0
+            ]
+        ], 
+        "position": [
+            308.0, 
+            288.0
+        ], 
+        "type": "poly", 
+        "size": [
+            334.0, 
+            253.0
+        ]
+    }, 
+    {
+        "name": "r5", 
+        "color": [
+            255, 
+            128, 
+            0
+        ], 
+        "holeList": [], 
+        "height": 0, 
+        "points": [
+            [
+                87.0, 
+                124.0
+            ], 
+            [
+                0, 
+                90
+            ], 
+            [
+                56, 
+                0
+            ], 
+            [
+                124.0, 
+                66.0
+            ]
+        ], 
+        "position": [
+            586.0, 
+            451.0
+        ], 
+        "type": "poly", 
+        "size": [
+            124.0, 
+            124.0
+        ]
+    }, 
+    {
+        "name": "r4", 
+        "color": [
+            255, 
+            128, 
+            0
+        ], 
+        "holeList": [], 
+        "height": 0, 
+        "points": [
+            [
+                89.0, 
+                0.0
+            ], 
+            [
+                189.0, 
+                82.0
+            ], 
+            [
+                91.0, 
+                139.0
+            ], 
+            [
+                0.0, 
+                13.0
+            ]
+        ], 
+        "position": [
+            217.0, 
+            206.0
+        ], 
+        "type": "poly", 
+        "size": [
+            189.0, 
+            139.0
+        ]
+    }, 
+    {
+        "name": "O4", 
+        "color": [
+            255, 
+            0, 
+            0
+        ], 
+        "holeList": [], 
+        "height": 0.0, 
+        "points": [
+            [
+                177.0, 
+                0.0
+            ], 
+            [
+                205.0, 
+                353.0
+            ], 
+            [
+                17.0, 
+                373.0
+            ], 
+            [
+                0.0, 
+                240.0
+            ], 
+            [
+                68.0, 
+                23.0
+            ]
+        ], 
+        "position": [
+            828.0, 
+            253.0
+        ], 
+        "type": "poly", 
+        "size": [
+            205.0, 
+            373.0
+        ]
+    }, 
+    {
+        "name": "O1", 
+        "color": [
+            0, 
+            0, 
+            255
+        ], 
+        "holeList": [], 
+        "height": 0.0, 
+        "points": [
+            [
+                402.0, 
+                0.0
+            ], 
+            [
+                288.0, 
+                103.0
+            ], 
+            [
+                37.0, 
+                134.0
+            ], 
+            [
+                0.0, 
+                27.0
+            ]
+        ], 
+        "position": [
+            269.0, 
+            72.0
+        ], 
+        "type": "poly", 
+        "size": [
+            402.0, 
+            134.0
+        ]
+    }, 
+    {
+        "name": "station2", 
+        "color": [
+            0, 
+            0, 
+            255
+        ], 
+        "holeList": [], 
+        "height": 0.0, 
+        "points": [
+            [
+                155.0, 
+                0.0
+            ], 
+            [
+                172.0, 
+                133.0
+            ], 
+            [
+                0.0, 
+                82.0
+            ], 
+            [
+                37.0, 
+                24.0
+            ]
+        ], 
+        "position": [
+            673.0, 
+            493.0
+        ], 
+        "type": "poly", 
+        "size": [
+            172.0, 
+            133.0
+        ]
+    }, 
+    {
+        "name": "station1", 
+        "color": [
+            0, 
+            255, 
+            0
+        ], 
+        "holeList": [], 
+        "height": 0.0, 
+        "points": [
+            [
+                57.0, 
+                11.0
+            ], 
+            [
+                132.0, 
+                0.0
+            ], 
+            [
+                169.0, 
+                107.0
+            ], 
+            [
+                80.0, 
+                120.0
+            ], 
+            [
+                0.0, 
+                70.0
+            ]
+        ], 
+        "position": [
+            137.0, 
+            99.0
+        ], 
+        "type": "poly", 
+        "size": [
+            169.0, 
+            120.0
+        ]
+    }
+]
+
+Transitions: # Region 1 Name, Region 2 Name, Bidirectional transition faces (face1_x1, face1_y1, face1_x2, face1_y2, face2_x1, ...)
+boundary	O3	1005	253	886	72
+boundary	O2	671	72	886	72
+boundary	building	586	541	308	345
+boundary	r5	586	541	673	575
+boundary	r4	217	219	308	345
+boundary	O4	1033	606	845	626	1033	606	1005	253
+boundary	O1	671	72	269	99
+boundary	station2	845	626	673	575
+boundary	station1	194	110	137	169	217	219	137	169	194	110	269	99
+r1	O3	836	152	896	276
+r1	O2	557	175	836	152
+r1	building	642	451	406	288
+r1	r5	642	451	710	517
+r1	r4	306	206	406	288
+r1	O4	828	493	896	276
+r1	O1	306	206	557	175
+r1	station2	828	493	710	517
+O3	O2	886	72	836	152
+O3	O4	1005	253	896	276
+O2	O1	557	175	671	72
+building	r5	586	541	642	451
+building	r4	308	345	406	288
+r5	station2	710	517	673	575
+r4	station1	306	206	217	219
+O4	station2	828	493	845	626
+O1	station1	306	206	269	99
+

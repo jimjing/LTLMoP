@@ -10,6 +10,15 @@ def loadRegionFile(path):
 
 def calcCostFromRegions(rfi):
     cost_map = []
+
+    # Do same region cost first
+    for r in rfi.regions:
+        if r.name == "boundary":
+            continue
+        cost = 0.001
+        saftyLTL = safetyLTLFromSameRegion(rfi, r)
+        cost_map.append([round(cost,3), saftyLTL])
+
     for r_id_1, data in enumerate(rfi.transitions):
         r1 = rfi.regions[r_id_1]
         if r1.name == "boundary":
@@ -35,6 +44,21 @@ def writeCostFile(costs, path):
 
         for cost in costs:
             f.write("{0} {1}\n".format(cost[0], cost[1]))
+
+def safetyLTLFromSameRegion(rfi, r_in):
+    text_list = []
+    for r in rfi.regions:
+        if r.name == "boundary": continue
+        if r.isObstacle:
+            continue
+        if r == r_in:
+            text_list.append(r.name)
+            text_list.append(r.name + "'")
+        else:
+            text_list.append("! " + r.name)
+            text_list.append("! " + r.name + "'")
+
+    return "& " * (len(text_list) - 1) + " ".join(text_list)
 
 def safetyLTLFromRegion(rfi, r_from, r_to):
     text_list = []
