@@ -47,4 +47,5 @@ visit r1
 visit r20
 if you are sensing storm then do not (O3)
 infinitely often not storm
+if you are sensing storm then stay there
 

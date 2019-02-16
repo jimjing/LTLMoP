@@ -2,4 +2,6 @@
 
 #/home/jim/Projects/LTLMoP/src/etc/slugs/src/slugs --sysInitRoboticsSemantics --twoDimensionalCost --explicitStrategy  /home/jim/Projects/LTLMoP/src/examples/logistic/logistic.slugsin /home/jim/Projects/LTLMoP/src/examples/logistic/logistic.cost /home/jim/Projects/LTLMoP/src/examples/logistic/logistic.aut 
 
-/home/jim/Projects/LTLMoP/src/etc/slugs/src/slugs --sysInitRoboticsSemantics --twoDimensionalCost --explicitStrategy  /home/jim/Projects/LTLMoP/src/examples/rrt/rrt.slugsin /home/jim/Projects/LTLMoP/src/examples/rrt/rrt.cost /home/jim/Projects/LTLMoP/src/examples/rrt/rrt.aut 
+#/home/jim/Projects/LTLMoP/src/etc/slugs/src/slugs --sysInitRoboticsSemantics --twoDimensionalCost --explicitStrategy  /home/jim/Projects/LTLMoP/src/examples/rrt/rrt.slugsin /home/jim/Projects/LTLMoP/src/examples/rrt/rrt.cost /home/jim/Projects/LTLMoP/src/examples/rrt/rrt.aut 
+
+/home/jim/Projects/LTLMoP/src/etc/slugs/src/slugs --sysInitRoboticsSemantics --twoDimensionalCost --interactiveStrategy  /home/jim/Projects/LTLMoP/src/spec_5.slugsin /home/jim/Projects/LTLMoP/src/spec_5.cost
